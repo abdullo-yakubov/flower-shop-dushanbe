@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { lazy } from 'react'
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter } from 'react-router-dom'
 import { Layout } from './Layout'
 
 const CatalogPage = lazy(() => import('@/pages/Catalog').then((m) => ({ default: m.CatalogPage })))
@@ -25,7 +25,7 @@ export const router = createBrowserRouter([
     element: <Layout />,
     children: [
       { path: '/', element: <CatalogPage /> },
-      { path: '/catalog', element: <Navigate to="/" replace /> },
+      { path: '/catalog', element: <CatalogPage /> },
       { path: '/product/:slug', element: <ProductPage /> },
       { path: '/cart', element: <CartPage /> },
       { path: '/checkout', element: <CheckoutPage /> },

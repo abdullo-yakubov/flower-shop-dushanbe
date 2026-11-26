@@ -61,6 +61,24 @@ export interface CreateOrderPayload {
   isAnonymous?: boolean
   promoCode?: string
   redeemPoints?: number
+  expectedTotal?: number
+}
+
+export type OrderQuoteInput = Pick<CreateOrderPayload, 'items' | 'addons' | 'deliveryZoneId' | 'deliveryDate' | 'promoCode' | 'redeemPoints'>
+
+export interface OrderQuote {
+  itemsSubtotal: number
+  addonsTotal: number
+  deliveryFee: number
+  promoDiscount: number
+  pointsDiscount: number
+  total: number
+  earnPoints: number
+}
+
+export async function apiQuoteOrder(payload: OrderQuoteInput, signal?: AbortSignal): Promise<OrderQuote> {
+  const { data } = await apiClient.post<{ data: OrderQuote }>('/orders/quote', payload, { signal })
+  return data.data
 }
 
 export interface CreateOrderResult {

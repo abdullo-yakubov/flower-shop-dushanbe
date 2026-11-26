@@ -1,6 +1,6 @@
 import type { Product } from '@/entities/product/types'
 import type { BotAnswers } from './store'
-import { MOCK_PRODUCTS } from '@/entities/product/mock'
+import { unitPrice } from '@/features/cart/store'
 
 // Chatbot script
 // All question keys map to i18n `bot.*` keys
@@ -70,7 +70,7 @@ export const BOT_QUESTIONS: BotQuestion[] = [
 
 const OCCASION_MAP: Record<string, string[]> = {
   birthday: ['birthday'],
-  romance: ['wedding'],
+  romance: ['romantic'],
   thanks: ['birthday', 'mom'],
   sorry: ['sorry'],
   funeral: ['funeral'],
@@ -79,7 +79,7 @@ const OCCASION_MAP: Record<string, string[]> = {
 
 const FOR_WHOM_MAP: Record<string, string[]> = {
   mom: ['mom', 'birthday'],
-  love: ['wedding', 'birthday'],
+  love: ['romantic', 'wedding'],
   colleague: ['birthday', 'other'],
   friend: ['birthday', 'other'],
   wedding: ['wedding'],
@@ -93,35 +93,30 @@ const BUDGET_RANGE: Record<string, [number, number]> = {
   any: [0, 99999],
 }
 
-export function filterProducts(answers: BotAnswers): Product[] {
+export function filterProducts(answers: BotAnswers, products: Product[]): Product[] {
   const { forWhom, occasion, budget, urgency } = answers
 
   const occasionTags = occasion ? (OCCASION_MAP[occasion] ?? []) : []
   const forWhomTags = forWhom ? (FOR_WHOM_MAP[forWhom] ?? []) : []
-  const combinedTags = [...new Set([...occasionTags, ...forWhomTags])]
-
   const [minP, maxP] = budget ? BUDGET_RANGE[budget] : [0, 99999]
 
-  return MOCK_PRODUCTS.filter((p) => {
-    // Price filter — use M-size price or product.price
-    const price = p.sizes?.find((s) => s.id === 'm')?.price ?? p.price
-    if (price < minP || price > maxP) return false
-
-    // Urgency filter
-    if (urgency === 'today' && !p.deliverToday) return false
-
-    // Funeral filter: only show funeral products when funeral selected
-    if (occasion === 'funeral') return p.occasions.includes('funeral')
-    if (p.occasions.includes('funeral')) return false
-
-    // Tag matching — at least one occasion tag matches
-    if (combinedTags.length > 0) {
-      const matched = combinedTags.some((tag) => p.occasions.includes(tag as never))
-      if (!matched) return false
-    }
-
-    return true
+  return products.flatMap((product) => {
+    const option = getRecommendationOption(product)
+    if (!option || !product.inStock || (urgency === 'today' && !product.deliverToday)) return []
+    if (product.occasions.includes('funeral') !== (occasion === 'funeral')) return []
+    if (option.price < minP || option.price > maxP) return []
+    const matches = (tags: string[]) => product.occasions.some((tag) => tags.includes(tag))
+    const score = Number(matches(occasionTags)) * 2 + Number(matches(forWhomTags))
+    return [{ product, score, price: option.price }]
   })
-    .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+    .sort((a, b) => b.score - a.score || b.product.rating - a.product.rating || a.price - b.price)
     .slice(0, 3)
+    .map(({ product }) => product)
+}
+
+export function getRecommendationOption(product: Product) {
+  const size = product.sizes.find(({ label }) => label === 'M') ?? product.sizes[0]
+  if (!size) return undefined
+  const packaging = product.packagingOptions.includes('no_basket') ? 'no_basket' : product.packagingOptions[0] ?? 'no_basket'
+  return { size, packaging, price: unitPrice(product, size, packaging) }
 }

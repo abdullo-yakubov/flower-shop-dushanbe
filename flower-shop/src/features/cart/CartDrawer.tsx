@@ -12,6 +12,7 @@ import { formatShort, formatPrice } from '@/shared/lib/format'
 import { toast } from '@/shared/ui/toast.store'
 import { cn } from '@/shared/lib/cn'
 import { FREE_DELIVERY_THRESHOLD } from '@/shared/config/appConfig'
+import { thumbImage } from '@/shared/lib/image'
 
 const FREE_DELIVERY = FREE_DELIVERY_THRESHOLD
 
@@ -62,7 +63,7 @@ export function CartDrawer() {
     removeItem,
     total,
     promoCode,
-    promoDiscount,
+    discountAmount,
     applyPromo,
     clearPromo,
   } = useCartStore()
@@ -103,7 +104,7 @@ export function CartDrawer() {
     const ok = await applyPromo(promoInput)
     setPromoLoading(false)
     if (ok) {
-      toast.success(t('cart.promo_success', { discount: useCartStore.getState().promoDiscount }))
+      toast.success(t('cart.promo_success', { discount: formatShort(discountAmount()) + ' ' + t('common.som') }))
       setPromoInput('')
     } else {
       setPromoError(true)
@@ -148,7 +149,7 @@ export function CartDrawer() {
                     className="flex gap-3 bg-surface rounded-[14px] p-3 overflow-hidden shadow-sm"
                   >
                     <img
-                      src={item.product.images[0]}
+                      src={thumbImage(item.product.images[0])}
                       alt={item.product.name}
                       className="w-18 h-18 rounded-[10px] object-cover shrink-0"
                     />
@@ -258,7 +259,7 @@ export function CartDrawer() {
               <div className="flex items-center justify-between bg-green-deep/8 rounded-[10px] px-3 py-2">
                 <span className="text-sm font-medium text-green-deep">
                   <BadgePercent className="inline size-4 mr-1 -mt-0.5" aria-hidden />
-                  {promoCode} — −{promoDiscount}%
+                  {promoCode}
                 </span>
                 <button onClick={clearPromo} className="text-muted hover:text-error text-sm">
                   {t('common.remove')}
@@ -291,7 +292,7 @@ export function CartDrawer() {
 
           {/* Total */}
           <div className="px-4 py-4 border-t border-border space-y-2">
-            {promoDiscount > 0 && (
+            {discountAmount() > 0 && (
               <>
                 <div className="flex justify-between text-sm text-muted">
                   <span>{t('cart.subtotal')}</span>
@@ -300,9 +301,9 @@ export function CartDrawer() {
                   </span>
                 </div>
                 <div className="flex justify-between text-sm text-green-deep font-medium">
-                  <span>{t('cart.discount_label', { discount: promoDiscount })}</span>
+                  <span>{t('cart.discount_label')}</span>
                   <span className="tabular-nums">
-                    −{formatShort(Math.round((subtotal * promoDiscount) / 100))} {t('common.som')}
+                    −{formatShort(discountAmount())} {t('common.som')}
                   </span>
                 </div>
               </>

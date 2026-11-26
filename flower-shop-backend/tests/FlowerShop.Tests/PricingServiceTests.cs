@@ -111,6 +111,20 @@ public class PricingServiceTests
     }
 
     [Fact]
+    public async Task Same_day_order_requires_same_day_availability()
+    {
+        using var t = new TestDb();
+        t.Bouquet.DeliverToday = false;
+        await t.Db.SaveChangesAsync();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(5));
+        var input = Input([new CreateOrderItem(t.Bouquet.Id, t.BouquetM.Id)]) with { DeliveryDate = today };
+        var pricing = new PricingService(t.Db);
+        var ex = await Assert.ThrowsAsync<AppException>(() => pricing.QuoteAsync(t.UserId, input, default));
+        Assert.Equal("DELIVERY_UNAVAILABLE", ex.Code);
+        Assert.Single((await pricing.QuoteAsync(t.UserId, input with { DeliveryDate = today.AddDays(1) }, default)).Items);
+    }
+
+    [Fact]
     public async Task Holiday_markup_applies_to_live_flowers_only()
     {
         using var t = new TestDb();

@@ -43,6 +43,9 @@ public class OrderService(AppDbContext db, LoyaltyService loyalty, PricingServic
         var quote = await pricing.QuoteAsync(userId, new OrderPricingInput(
             req.Items, req.Addons, req.DeliveryZoneId, deliveryDate, req.PromoCode, req.RedeemPoints), ct);
 
+        if (req.ExpectedTotal is int expectedTotal && expectedTotal != quote.Total)
+            throw new AppException("PRICE_CHANGED", "Итог заказа изменился. Проверьте обновлённую сумму.");
+
         var now = DateTimeOffset.UtcNow;
         var order = new Order
         {

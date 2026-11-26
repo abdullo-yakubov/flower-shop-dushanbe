@@ -1,6 +1,6 @@
 import { Eye, Heart, Star } from 'lucide-react'
 import { useState, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { Product } from './types'
@@ -12,8 +12,7 @@ import { useCartFlyStore } from '@/features/cart/flyStore'
 import { formatShort } from '@/shared/lib/format'
 import { toast } from '@/shared/ui/toast.store'
 import { getHolidayInfo, applyHolidayPrice } from '@/shared/lib/holiday'
-
-const PLACEHOLDER_IMAGE = '/placeholder-flower.svg'
+import { catalogImageSources, PLACEHOLDER_IMAGE, showImagePlaceholder } from '@/shared/lib/image'
 
 interface Props {
   product: Product
@@ -24,6 +23,7 @@ interface Props {
 
 export function ProductCard({ product, index = 0 }: Props) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const [imgIdx, setImgIdx] = useState(0)
   const [imgHovered, setImgHovered] = useState(false)
   const [added, setAdded] = useState(false)
@@ -43,6 +43,10 @@ export function ProductCard({ product, index = 0 }: Props) {
     e.preventDefault()
     e.stopPropagation()
     const size = product.sizes.find((s) => s.label === 'M') || product.sizes[0]
+    if (product.kind === 'single' || !product.packagingOptions.includes('no_basket') || !size) {
+      navigate(`/product/${product.slug}`)
+      return
+    }
     addItem(product, size)
 
     // FLIP fly-to-cart: measure image container, fire animation
@@ -93,15 +97,14 @@ export function ProductCard({ product, index = 0 }: Props) {
     .slice(0, 2)
 
   // Stagger first page (0–11) fully; later batches stagger within their own group of 12
-  const batchIndex = index < 12 ? index : index % 12
-  const staggerDelay = batchIndex * 0.04
+  const staggerDelay = Math.min(Math.max(0, index), 5) * 0.025
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.28, delay: staggerDelay, ease: [0.22, 1, 0.36, 1] }}
-      className="group relative bg-surface rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.10)] transition-shadow duration-300 overflow-hidden flex flex-col"
+      className="group relative bg-surface rounded-[22px] border border-border/70 shadow-[0_8px_28px_rgba(39,66,46,0.07)] hover:shadow-[0_18px_42px_rgba(39,66,46,0.14)] hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col"
     >
       <Link to={`/product/${product.slug}`} className="contents">
         {/* Image */}
@@ -125,20 +128,18 @@ export function ProductCard({ product, index = 0 }: Props) {
             <AnimatePresence mode="wait">
               <motion.img
                 key={imgIdx}
-                src={product.images[imgIdx]}
+                src={product.images[imgIdx] || PLACEHOLDER_IMAGE}
+                srcSet={catalogImageSources(product.images[imgIdx])}
+                sizes="(min-width: 1280px) 292px, (min-width: 1024px) 330px, 50vw"
                 alt={product.name}
-                loading="lazy"
+                loading={index < 2 ? 'eager' : 'lazy'}
+                decoding="async"
                 className="absolute inset-0 w-full h-full object-cover"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                onError={(e) => {
-                  const img = e.currentTarget
-                  if (img.src !== window.location.origin + PLACEHOLDER_IMAGE) {
-                    img.src = PLACEHOLDER_IMAGE
-                  }
-                }}
+                onError={showImagePlaceholder}
               />
             </AnimatePresence>
           </motion.div>
@@ -181,16 +182,16 @@ export function ProductCard({ product, index = 0 }: Props) {
         </div>
 
         {/* Info */}
-        <div className="p-3 flex flex-col gap-1 flex-1">
-          <p className="text-sm font-medium text-ink line-clamp-2 leading-snug">{product.name}</p>
+        <div className="px-2.5 sm:px-4 pt-3 sm:pt-4 pb-3 flex flex-col gap-1.5 flex-1 min-w-0">
+          <p className="font-serif text-base sm:text-lg font-semibold text-ink line-clamp-2 leading-snug">{product.name}</p>
           <p className="text-xs text-muted line-clamp-1">{product.composition}</p>
           <div className="flex items-center gap-1 mt-0.5">
             <Star className="size-3 text-gold" fill="currentColor" strokeWidth={0} aria-hidden />
             <span className="text-xs font-medium">{product.rating.toFixed(1)}</span>
             <span className="text-xs text-muted">({product.reviewCount})</span>
           </div>
-          <div className="flex items-baseline gap-2 mt-auto pt-1">
-            <span className="text-base font-semibold text-green-deep tabular-nums">
+          <div className="flex flex-wrap items-baseline gap-x-2 mt-auto pt-1">
+            <span className="text-lg font-bold text-green-deep tabular-nums">
               {formatShort(displayPrice)}
             </span>
             {displayOld && (
@@ -206,10 +207,11 @@ export function ProductCard({ product, index = 0 }: Props) {
       </Link>
 
       {/* Add to cart button */}
-      <div className="px-3 pb-3 md:opacity-0 md:translate-y-2 md:group-hover:opacity-100 md:group-hover:translate-y-0 transition-all duration-200">
+      <div className="px-2.5 sm:px-4 pb-3 sm:pb-4">
         <button
           onClick={handleAddToCart}
-          className={`w-full h-10 rounded-[10px] text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 active:scale-[0.97] ${
+          disabled={!product.inStock}
+          className={`w-full h-11 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 active:scale-[0.97] ${
             added ? 'bg-green-deep text-white' : 'bg-green-deep text-white hover:bg-green-light'
           }`}
         >
@@ -233,7 +235,8 @@ export function ProductCard({ product, index = 0 }: Props) {
               {t('common.added')}
             </>
           ) : (
-            t('common.add_to_cart')
+            !product.inStock ? t('common.out_of_stock') : product.kind === 'single' || !product.packagingOptions.includes('no_basket')
+              ? t('catalog.choose_options') : t('common.add_to_cart')
           )}
         </button>
       </div>

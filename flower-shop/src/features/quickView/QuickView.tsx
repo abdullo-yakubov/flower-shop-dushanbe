@@ -10,6 +10,7 @@ import { useHolidayPricing } from '@/shared/hooks/useHolidayPricing'
 import { Button } from '@/shared/ui/Button'
 import { toast } from '@/shared/ui/toast.store'
 import { ROUTES } from '@/shared/config/routes'
+import { PLACEHOLDER_IMAGE, showImagePlaceholder } from '@/shared/lib/image'
 
 export function QuickView() {
   const { t } = useTranslation()
@@ -56,6 +57,7 @@ export function QuickView() {
 
   const handleAdd = () => {
     const size = activeSize ?? product.sizes[0]
+    if (!size || !product.inStock) return
     addItem(product, size)
     toast.success(t('common.added_to_cart'))
     close()
@@ -98,8 +100,10 @@ export function QuickView() {
             <div className="relative aspect-square bg-cream overflow-hidden rounded-t-2xl sm:rounded-l-2xl sm:rounded-tr-none">
               <motion.img
                 key={imgIdx}
-                src={product.images[imgIdx]}
+                src={product.images[imgIdx] || PLACEHOLDER_IMAGE}
                 alt={product.name}
+                decoding="async"
+                onError={showImagePlaceholder}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className="w-full h-full object-cover"
@@ -189,9 +193,15 @@ export function QuickView() {
               )}
 
               <div className="flex gap-2 mt-auto pt-2">
-                <Button fullWidth onClick={handleAdd} disabled={!product.inStock}>
-                  {product.inStock ? t('common.add_to_cart') : t('common.out_of_stock')}
-                </Button>
+                {(product.kind === 'single' || !product.packagingOptions.includes('no_basket')) && product.inStock ? (
+                  <Link to={ROUTES.PRODUCT(product.slug)} onClick={close} className="flex min-h-11 items-center justify-center rounded-xl bg-green-deep px-4 text-sm font-semibold text-white">
+                    {t('catalog.choose_options')}
+                  </Link>
+                ) : (
+                  <Button fullWidth onClick={handleAdd} disabled={!product.inStock}>
+                    {product.inStock ? t('common.add_to_cart') : t('common.out_of_stock')}
+                  </Button>
+                )}
                 <Link
                   to={ROUTES.PRODUCT(product.slug)}
                   onClick={close}

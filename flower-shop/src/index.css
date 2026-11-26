@@ -72,6 +72,31 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+}
+
+/* Quiet, compact scrollbar that follows the store palette. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--green-deep) 55%, transparent) transparent;
+}
+
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--green-deep) 45%, var(--cream));
+  border: 2px solid var(--cream);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--green-deep); }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 body {
@@ -83,6 +108,43 @@ body {
   transition:
     background-color 0.2s ease,
     color 0.2s ease;
+}
+
+.store-hero {
+  display: grid;
+  grid-template-columns: .9fr 1.1fr;
+  overflow: hidden;
+  isolation: isolate;
+  margin-bottom: 2rem;
+  border: 1px solid var(--border);
+  border-radius: clamp(1.25rem, 3vw, 2.5rem);
+  background: color-mix(in srgb, var(--cream) 80%, var(--rose-dust));
+}
+
+.store-hero-copy {
+  display: grid;
+  align-content: center;
+  gap: clamp(.85rem, 2vw, 1.5rem);
+  padding: clamp(1.4rem, 5.5vw, 5rem);
+}
+
+.store-hero-photo {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.occasion-rail {
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+}
+
+.occasion-rail > button { scroll-snap-align: start; }
+
+@media (max-width: 767px) {
+  .store-hero { grid-template-columns: 1fr; }
+  .store-hero-photo { aspect-ratio: 16 / 9; }
 }
 
 #root {

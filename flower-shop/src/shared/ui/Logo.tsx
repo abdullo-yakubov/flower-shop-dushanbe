@@ -7,10 +7,8 @@ interface LogoMarkProps {
   tone?: 'default' | 'inverse'
 }
 
-/** Brand mark: a stylised tulip. Same geometry as /public/favicon.svg. */
+/** Flower emblem used throughout the storefront. */
 export function LogoMark({ className, tone = 'default' }: LogoMarkProps) {
-  const stem = tone === 'inverse' ? '#ffffff' : 'var(--green-deep)'
-  const leaf = tone === 'inverse' ? 'rgba(255,255,255,0.7)' : 'var(--green-light)'
   return (
     <svg
       viewBox="0 0 32 32"
@@ -18,11 +16,9 @@ export function LogoMark({ className, tone = 'default' }: LogoMarkProps) {
       focusable="false"
       className={cn('shrink-0', className)}
     >
-      <path d="M16 17.5V29" stroke={stem} strokeWidth="2.2" strokeLinecap="round" fill="none" />
-      <path d="M16 25.5c-4.6-.4-7-3.4-7.4-7 3.9.3 6.4 2.6 7.4 7Z" fill={leaf} />
-      <path d="M16 18c-5.6-.4-8.3-4.6-7.6-11 3.3 1.6 6 5 7.6 11Z" fill="#C9606F" />
-      <path d="M16 18c5.6-.4 8.3-4.6 7.6-11-3.3 1.6-6 5-7.6 11Z" fill="#C9606F" />
-      <path d="M16 3.5c3.7 3.2 4.7 8.2 0 14.5-4.7-6.3-3.7-11.3 0-14.5Z" fill="#E8A0A8" />
+      <rect x="1" y="1" width="30" height="30" rx="11" fill={tone === 'inverse' ? '#F7EDE4' : '#294739'} />
+      <path d="M16 15.5c-5.7 0-8.5-3-8.5-8 4.6.4 7.4 3.1 8.5 8Zm0 0c5.7 0 8.5-3 8.5-8-4.6.4-7.4 3.1-8.5 8Zm0-2.2c-2.8-2.8-2.8-5.6 0-8.6 2.8 3 2.8 5.8 0 8.6Z" fill={tone === 'inverse' ? '#9C4F62' : '#F3C0BA'} />
+      <path d="M16 16v10m0-3c-3.4 0-5.7-1.5-6.7-4m6.7 2.1c3.1 0 5.1-1.3 6.3-3.4" fill="none" stroke={tone === 'inverse' ? '#294739' : '#E5EDCB'} strokeWidth="1.4" strokeLinecap="round" />
     </svg>
   )
 }

@@ -19,7 +19,7 @@ public class GlobalExceptionHandlingMiddleware(RequestDelegate next, ILogger<Glo
                 "NOT_FOUND" => 404,
                 "UNAUTHORIZED" => 401,
                 "FORBIDDEN" => 403,
-                "CONFLICT" => 409,
+                "CONFLICT" or "PRICE_CHANGED" => 409,
                 "RATE_LIMIT" => 429,
                 _ => 400
             };

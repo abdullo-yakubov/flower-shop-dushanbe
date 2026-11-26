@@ -11,6 +11,7 @@ import { formatPrice, formatShort } from '@/shared/lib/format'
 import { toast } from '@/shared/ui/toast.store'
 import { cn } from '@/shared/lib/cn'
 import { FREE_DELIVERY_THRESHOLD, DELIVERY_PRICE_DEFAULT } from '@/shared/config/appConfig'
+import { thumbImage } from '@/shared/lib/image'
 
 export function CartPage() {
   const { t } = useTranslation()
@@ -20,7 +21,7 @@ export function CartPage() {
     removeItem,
     total,
     promoCode,
-    promoDiscount,
+    discountAmount,
     applyPromo,
     clearPromo,
   } = useCartStore()
@@ -32,7 +33,7 @@ export function CartPage() {
   const promoRef = useRef<HTMLDivElement>(null)
 
   const subtotal = items.reduce((s, i) => s + i.snapshotPrice * i.quantity, 0)
-  const discount = Math.round((subtotal * promoDiscount) / 100)
+  const discount = discountAmount()
   const deliveryFee = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_PRICE_DEFAULT
 
   const handleRemove = (id: string, name: string) => {
@@ -47,7 +48,7 @@ export function CartPage() {
     const ok = await applyPromo(promoInput)
     setPromoLoading(false)
     if (ok) {
-      toast.success(t('cart.promo_success', { discount: useCartStore.getState().promoDiscount }))
+      toast.success(t('cart.promo_success', { discount: formatShort(discountAmount()) + ' ' + t('common.som') }))
       setPromoInput('')
     } else {
       setPromoError(true)
@@ -117,7 +118,7 @@ export function CartPage() {
                 <div className="flex gap-4 bg-white rounded-2xl p-4 shadow-[0_4px_24px_rgba(0,0,0,0.06)]">
                   <Link to={`/product/${item.product.slug}`} className="shrink-0">
                     <img
-                      src={item.product.images[0]}
+                      src={thumbImage(item.product.images[0])}
                       alt={item.product.name}
                       className="w-22 h-22 md:w-24 md:h-24 rounded-xl object-cover hover:opacity-90 transition-opacity"
                     />
@@ -204,13 +205,13 @@ export function CartPage() {
         {/* Summary sidebar */}
         <div className="w-full lg:w-85 shrink-0 sticky top-20 space-y-4">
           {/* Promo */}
-          <div className="bg-white rounded-2xl p-5 shadow-[0_4px_24px_rgba(0,0,0,0.06)]">
+          <div className="bg-surface rounded-2xl p-4 sm:p-5 shadow-[0_4px_24px_rgba(0,0,0,0.06)]">
             <h3 className="text-sm font-semibold text-ink mb-3">{t('cart.promo')}</h3>
             {promoCode ? (
               <div className="flex items-center justify-between bg-green-deep/8 rounded-[10px] px-3 py-2.5">
                 <span className="text-sm font-medium text-green-deep">
                   <BadgePercent className="inline size-4 mr-1 -mt-0.5" aria-hidden />
-                  {promoCode} — −{promoDiscount}%
+                  {promoCode}
                 </span>
                 <button
                   onClick={clearPromo}
@@ -230,8 +231,9 @@ export function CartPage() {
                     }}
                     onKeyDown={(e) => e.key === 'Enter' && handlePromo()}
                     placeholder={t('cart.promo_placeholder')}
+                    aria-label={t('cart.promo')}
                     className={cn(
-                      'flex-1 h-10 px-3 rounded-[10px] border text-sm outline-none transition-all bg-white placeholder:text-muted',
+                      'min-w-0 flex-1 h-11 px-3 rounded-[10px] border text-sm outline-none transition-all bg-surface placeholder:text-muted',
                       promoError
                         ? 'border-error focus:border-error focus:ring-2 focus:ring-error/15'
                         : 'border-border focus:border-green-deep focus:ring-2 focus:ring-green-deep/15'
@@ -247,7 +249,7 @@ export function CartPage() {
           </div>
 
           {/* Order total */}
-          <div className="bg-white rounded-2xl p-5 shadow-[0_4px_24px_rgba(0,0,0,0.06)] space-y-3">
+          <div className="bg-surface rounded-2xl p-4 sm:p-5 shadow-[0_4px_24px_rgba(0,0,0,0.06)] space-y-3">
             <h3 className="text-sm font-semibold text-ink">{t('common.total')}</h3>
 
             <div className="space-y-2">
@@ -262,7 +264,7 @@ export function CartPage() {
 
               {discount > 0 && (
                 <div className="flex justify-between text-sm text-green-deep font-medium">
-                  <span>{t('cart.discount_label', { discount: promoDiscount })}</span>
+                  <span>{t('cart.discount_label')}</span>
                   <span className="tabular-nums">
                     −{formatShort(discount)} {t('common.som')}
                   </span>

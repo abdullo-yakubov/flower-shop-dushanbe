@@ -1,13 +1,12 @@
-import { Check, CircleCheck, Heart, ShoppingBag, Truck } from 'lucide-react'
+import { Check, Heart, ShoppingBag, Truck } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useProduct, useReviews } from '@/entities/product/queries'
+import { useProduct, useProducts, useReviews } from '@/entities/product/queries'
 import type { Packaging, ProductSize } from '@/entities/product/types'
 import { useCartStore, unitPrice } from '@/features/cart/store'
 import { useFavoritesStore } from '@/features/favorites/store'
-import { useAuthStore } from '@/features/auth/store'
 import { useRecentlyViewedStore } from '@/features/recently-viewed/store'
 import { RecentlyViewed } from '@/features/recently-viewed/RecentlyViewed'
 import { Button } from '@/shared/ui/Button'
@@ -20,7 +19,7 @@ import { formatPrice, formatShort } from '@/shared/lib/format'
 import { toast } from '@/shared/ui/toast.store'
 import { usePageTitle } from '@/shared/hooks/usePageTitle'
 import { ProductCard } from '@/entities/product/ProductCard'
-import { MOCK_PRODUCTS } from '@/entities/product/mock'
+import { catalogImageSources, isCatalogIllustration, PLACEHOLDER_IMAGE, showImagePlaceholder, thumbImage } from '@/shared/lib/image'
 
 function Accordion({ title, children }: { title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false)
@@ -61,7 +60,8 @@ export function ProductPage() {
   const { slug } = useParams<{ slug: string }>()
   const { data: product, isLoading } = useProduct(slug!)
   const { data: reviews } = useReviews(slug!)
-  const authUser = useAuthStore((s) => s.user)
+  const navigate = useNavigate()
+  const { data: catalog } = useProducts({})
 
   const [selectedSize, setSelectedSize] = useState<ProductSize | null>(null)
   const [selectedPackaging, setSelectedPackaging] = useState<Packaging>('no_basket')
@@ -69,10 +69,6 @@ export function ProductPage() {
   const [activeImg, setActiveImg] = useState(0)
   const [added, setAdded] = useState(false)
   const [ctaVisible, setCtaVisible] = useState(true)
-  const [quickBuyOpen, setQuickBuyOpen] = useState(false)
-  const [quickBuyPhone, setQuickBuyPhone] = useState(() => authUser?.phone || '+992')
-  const [quickBuyLoading, setQuickBuyLoading] = useState(false)
-  const [quickBuyDone, setQuickBuyDone] = useState(false)
   const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null)
 
   const addItem = useCartStore((s) => s.addItem)
@@ -84,8 +80,6 @@ export function ProductPage() {
     setPrevProduct(product)
     setActiveImg(0)
     setSelectedSize(null)
-    setQuickBuyOpen(false)
-    setQuickBuyDone(false)
     if (product.packagingOptions.length > 0) {
       setSelectedPackaging(
         product.packagingOptions.includes('no_basket') ? 'no_basket' : product.packagingOptions[0]
@@ -96,11 +90,6 @@ export function ProductPage() {
     }
   }
 
-  const [prevAuthUser, setPrevAuthUser] = useState(authUser)
-  if (authUser?.phone !== prevAuthUser?.phone) {
-    setPrevAuthUser(authUser)
-    setQuickBuyPhone(authUser?.phone || '+992')
-  }
 
   usePageTitle(product?.name)
 
@@ -154,7 +143,7 @@ export function ProductPage() {
   const avgRating = reviews
     ? reviews.reduce((s, r) => s + r.rating, 0) / (reviews.length || 1)
     : product.rating
-  const related = MOCK_PRODUCTS.filter(
+  const related = (catalog?.pages.flatMap((page) => page.items) ?? []).filter(
     (p) => p.id !== product.id && p.occasions.some((o) => product.occasions.includes(o))
   ).slice(0, 4)
 
@@ -166,6 +155,7 @@ export function ProductPage() {
   )
 
   const handleAddToCart = () => {
+    if (!product.inStock || !size) return
     addItem(product, size, {
       packaging: selectedPackaging,
       stemCount: product.kind === 'single' ? stemCount : undefined,
@@ -175,16 +165,6 @@ export function ProductPage() {
     setTimeout(() => setAdded(false), 1500)
   }
 
-  const handleQuickBuy = async () => {
-    if (quickBuyPhone.replace(/\D/g, '').length < 9) {
-      toast.error(t('product.invalid_phone'))
-      return
-    }
-    setQuickBuyLoading(true)
-    await new Promise((r) => setTimeout(r, 1200))
-    setQuickBuyLoading(false)
-    setQuickBuyDone(true)
-  }
 
   const navigateImg = (dir: 1 | -1) => {
     setActiveImg((i) => Math.max(0, Math.min(product.images.length - 1, i + dir)))
@@ -218,7 +198,7 @@ export function ProductPage() {
                 onClick={() => setActiveImg(i)}
                 className={`rounded-[10px] overflow-hidden aspect-square border-2 transition-all ${activeImg === i ? 'border-green-deep' : 'border-transparent hover:border-border'}`}
               >
-                <img src={img} alt="" className="w-full h-full object-cover" />
+                <img src={thumbImage(img) || PLACEHOLDER_IMAGE} alt="" loading="lazy" decoding="async" onError={showImagePlaceholder} className="w-full h-full object-cover" />
               </button>
             ))}
           </div>
@@ -231,8 +211,12 @@ export function ProductPage() {
             <AnimatePresence mode="wait">
               <motion.img
                 key={activeImg}
-                src={product.images[activeImg]}
+                src={product.images[activeImg] || PLACEHOLDER_IMAGE}
+                srcSet={catalogImageSources(product.images[activeImg])}
+                sizes="(min-width: 1280px) 560px, (min-width: 768px) 45vw, 100vw"
                 alt={product.name}
+                decoding="async"
+                onError={showImagePlaceholder}
                 className="w-full aspect-[3/4] object-cover rounded-2xl bg-cream"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -242,6 +226,11 @@ export function ProductPage() {
               />
             </AnimatePresence>
 
+            {isCatalogIllustration(product.images[activeImg]) && (
+              <p className="absolute bottom-8 right-2 sm:bottom-3 sm:right-3 rounded-full bg-surface/90 px-2.5 py-1 text-xs text-ink">
+                {t('product.illustration')}
+              </p>
+            )}
             <div className="absolute top-3 left-3 flex flex-col gap-1.5">
               {product.discount && <Badge variant="discount">−{product.discount}%</Badge>}
               {product.isHit && <Badge variant="hit">{t('catalog.hit')}</Badge>}
@@ -418,7 +407,7 @@ export function ProductPage() {
             <Button
               size="lg"
               fullWidth
-              onClick={handleAddToCart}
+              disabled={!product.inStock} onClick={handleAddToCart}
               className={added ? 'bg-green-light' : ''}
             >
               {added ? (
@@ -450,89 +439,21 @@ export function ProductPage() {
               size="lg"
               fullWidth
               variant="outline"
+              disabled={!product.inStock}
               onClick={() => {
-                setQuickBuyOpen(true)
-                setQuickBuyDone(false)
+                handleAddToCart()
+                navigate('/checkout')
               }}
             >
-              {t('product.buy_one_click')}
+              {t('cart.checkout')}
             </Button>
-
-            <AnimatePresence>
-              {quickBuyOpen && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                  className="overflow-hidden"
-                >
-                  <div className="bg-cream rounded-[14px] p-4 space-y-3">
-                    {quickBuyDone ? (
-                      <motion.div
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="flex flex-col items-center gap-2 py-2 text-center"
-                      >
-                        <CircleCheck className="size-7 text-green-deep" aria-hidden />
-                        <p className="text-sm font-semibold text-green-deep">
-                          {t('product.request_accepted')}
-                        </p>
-                        <p className="text-xs text-muted leading-relaxed">
-                          {t('product.manager_callback')}
-                        </p>
-                        <button
-                          onClick={() => setQuickBuyOpen(false)}
-                          className="mt-1 text-xs text-muted underline underline-offset-2"
-                        >
-                          {t('common.close')}
-                        </button>
-                      </motion.div>
-                    ) : (
-                      <>
-                        <div>
-                          <p className="text-sm font-semibold text-ink mb-1">
-                            {t('product.buy_one_click')}
-                          </p>
-                          <p className="text-xs text-muted">{t('product.quick_buy_hint')}</p>
-                        </div>
-                        <input
-                          type="tel"
-                          value={quickBuyPhone}
-                          onChange={(e) => setQuickBuyPhone(e.target.value)}
-                          placeholder="+992 — — — — —"
-                          className="w-full h-11 px-3 rounded-[10px] border border-border bg-surface text-sm text-ink placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-green-deep/25 focus:border-green-deep transition-all"
-                        />
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => setQuickBuyOpen(false)}
-                            className="flex-1 h-10 rounded-[10px] border border-border text-sm text-muted hover:bg-surface transition-colors"
-                          >
-                            {t('common.cancel')}
-                          </button>
-                          <button
-                            onClick={handleQuickBuy}
-                            disabled={quickBuyLoading}
-                            className="flex-1 h-10 rounded-[10px] bg-green-deep text-white text-sm font-medium hover:bg-green-light transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5"
-                          >
-                            {quickBuyLoading ? (
-                              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            ) : (
-                              t('product.send_request')
-                            )}
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
 
             <div className="flex items-center justify-between">
               <button
                 onClick={() => toggle(product.id)}
-                className="flex items-center gap-2 text-sm text-muted hover:text-rose-dust transition-colors"
+                type="button"
+                aria-pressed={isFav}
+                className="min-h-11 flex items-center gap-2 text-sm text-muted hover:text-rose-dust transition-colors"
               >
                 <Heart
                   className={isFav ? 'size-4 text-rose-dust' : 'size-4'}
@@ -633,7 +554,7 @@ export function ProductPage() {
             className="fixed bottom-14 md:hidden inset-x-0 z-30 bg-surface/95 backdrop-blur-md border-t border-border px-4 py-3 flex items-center gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]"
           >
             <img
-              src={product.images[0]}
+              src={thumbImage(product.images[0])}
               alt=""
               className="w-12 h-12 rounded-[10px] object-cover shrink-0"
             />
@@ -643,7 +564,7 @@ export function ProductPage() {
                 {formatPrice(currentPrice)}
               </p>
             </div>
-            <Button size="sm" onClick={handleAddToCart}>
+            <Button size="sm" disabled={!product.inStock} onClick={handleAddToCart}>
               {added ? (
                 <Check className="size-4" aria-label={t('common.added_to_cart')} />
               ) : (

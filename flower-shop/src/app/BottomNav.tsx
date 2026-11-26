@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -12,24 +11,7 @@ export function BottomNav() {
   const navigate = useNavigate()
   const cartCount = useCartStore((s) => s.count())
   const pulseKey = useCartFlyStore((s) => s.pulseKey)
-  const [prevCount, setPrevCount] = useState(cartCount)
-  const [cartBump, setCartBump] = useState(0)
-  const [prevPulseKey, setPrevPulseKey] = useState(pulseKey)
   const { user, openModal } = useAuthStore()
-
-  if (cartCount !== prevCount) {
-    setPrevCount(cartCount)
-    if (cartCount > prevCount) {
-      setCartBump((k) => k + 1)
-    }
-  }
-
-  if (pulseKey !== prevPulseKey) {
-    setPrevPulseKey(pulseKey)
-    if (pulseKey > 0) {
-      setCartBump((k) => k + 1)
-    }
-  }
 
   if (location.pathname === '/checkout') return null
 
@@ -38,7 +20,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-[16px] border-t border-border"
+      className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-surface/95 backdrop-blur-[16px] border-t border-border"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       aria-label={t('nav.main_nav')}
     >
@@ -54,8 +36,8 @@ export function BottomNav() {
         <NavItem to="/cart" label={t('nav.cart')} isActive={active('/cart')}>
           <div data-cart-target="bottom" className="relative">
             <motion.div
-              key={cartBump}
-              animate={cartBump > 0 ? { scale: [1, 1.25, 1] } : {}}
+              key={`${cartCount}-${pulseKey}`}
+              animate={{ scale: [1, 1.25, 1] }}
               transition={{ type: 'spring', stiffness: 400, damping: 10 }}
             >
               <CartNavIcon active={active('/cart')} />

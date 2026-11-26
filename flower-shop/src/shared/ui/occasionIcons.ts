@@ -1,8 +1,8 @@
 import {
-  Cake,
+  CakeSlice,
   Feather,
   Flower2,
-  Gem,
+  PartyPopper,
   HandHeart,
   Heart,
   HeartHandshake,
@@ -11,8 +11,8 @@ import {
 } from 'lucide-react'
 
 export const OCCASION_ICONS: Record<string, LucideIcon> = {
-  birthday: Cake,
-  wedding: Gem,
+  birthday: CakeSlice,
+  wedding: PartyPopper,
   nikah: HeartHandshake,
   romantic: Heart,
   mom: Flower2,

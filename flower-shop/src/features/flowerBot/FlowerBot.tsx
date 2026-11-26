@@ -1,13 +1,16 @@
-import { X } from 'lucide-react'
+import { ArrowUpRight, Sparkles, X } from 'lucide-react'
 import { LogoMark } from '@/shared/ui/Logo'
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useFlowerBotStore } from './store'
-import { BOT_QUESTIONS, filterProducts } from './botScript'
-import { useCartStore } from '@/features/cart/store'
+import { BOT_QUESTIONS, filterProducts, getRecommendationOption } from './botScript'
 import { formatPrice } from '@/shared/lib/format'
+import type { Product } from '@/entities/product/types'
+import { fetchProducts } from '@/entities/product/api'
+import { PLACEHOLDER_IMAGE, showImagePlaceholder, thumbImage } from '@/shared/lib/image'
 
 const TG_LINK = 'https://t.me/yakubov_111'
 
@@ -28,10 +31,7 @@ function BotTrigger({ onClick }: { onClick: () => void }) {
                  transition-shadow hover:shadow-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-deep"
     >
       {/* pulse ring */}
-      <span className="relative flex h-3 w-3">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-50" />
-        <span className="relative inline-flex rounded-full h-3 w-3 bg-white" />
-      </span>
+      <Sparkles className="size-4" aria-hidden />
       <span>{t('bot.cta')}</span>
     </motion.button>
   )
@@ -94,13 +94,8 @@ function OptionChips({ options, onSelect }: OptionChipsProps) {
 
 function MiniProductCard({ product }: { product: import('@/entities/product/types').Product }) {
   const { t } = useTranslation()
-  const addItem = useCartStore((s) => s.addItem)
-
-  const mSize = product.sizes?.find((s) => s.id === 'm') ?? product.sizes?.[0]
-
-  const handleAdd = () => {
-    if (mSize) addItem(product, mSize, { snapshotPrice: mSize.price })
-  }
+  const close = useFlowerBotStore((s) => s.close)
+  const option = getRecommendationOption(product)
 
   return (
     <motion.div
@@ -109,12 +104,10 @@ function MiniProductCard({ product }: { product: import('@/entities/product/type
       className="flex gap-3 p-3 rounded-2xl border border-border bg-cream/80 hover:border-green-deep/40 transition-colors"
     >
       <img
-        src={product.images[0]}
+        src={thumbImage(product.images[0]) || PLACEHOLDER_IMAGE}
         alt={product.name}
         className="w-16 h-20 object-cover rounded-xl shrink-0"
-        onError={(e) => {
-          ;(e.currentTarget as HTMLImageElement).src = '/placeholder-flower.svg'
-        }}
+        onError={showImagePlaceholder}
       />
       <div className="flex-1 min-w-0 flex flex-col justify-between">
         <div>
@@ -125,14 +118,16 @@ function MiniProductCard({ product }: { product: import('@/entities/product/type
         </div>
         <div className="flex items-center justify-between gap-2 mt-2">
           <span className="text-sm font-bold text-green-deep">
-            {formatPrice(mSize?.price ?? product.price)} {t('common.som')}
+            {formatPrice(option?.price ?? product.price)}
           </span>
-          <button
-            onClick={handleAdd}
-            className="text-xs font-semibold px-2.5 py-1 rounded-full bg-green-deep text-white hover:opacity-90 transition-opacity"
+          <Link
+            to={`/product/${product.slug}`}
+            onClick={close}
+            aria-label={`${t('catalog.choose_options')} — ${product.name}`}
+            className="inline-flex min-h-10 items-center gap-1 text-xs font-semibold px-2.5 rounded-full bg-green-deep text-white"
           >
-            {t('common.add_to_cart')}
-          </button>
+            {t('catalog.choose_options')} <ArrowUpRight className="size-3" aria-hidden />
+          </Link>
         </div>
       </div>
     </motion.div>
@@ -141,9 +136,20 @@ function MiniProductCard({ product }: { product: import('@/entities/product/type
 
 // Results screen
 
-function ResultsScreen({ onReset }: { onReset: () => void }) {
+async function fetchAllProducts(): Promise<Product[]> {
+  const first = await fetchProducts({ page: 1 })
+  const products = [...first.items]
+  for (let page = 2; products.length < first.total; page++) {
+    const next = await fetchProducts({ page })
+    if (!next.items.length) break
+    products.push(...next.items)
+  }
+  return products
+}
+
+function ResultsScreen({ results, onReset }: { results: Product[]; onReset: () => void }) {
   const { t } = useTranslation()
-  const { results } = useFlowerBotStore()
+  const close = useFlowerBotStore((s) => s.close)
 
   const hasResults = results.length > 0
 
@@ -172,6 +178,7 @@ function ResultsScreen({ onReset }: { onReset: () => void }) {
       <div className="flex flex-col gap-2 mt-1">
         <Link
           to="/catalog"
+          onClick={close}
           className="w-full text-center py-2.5 rounded-full bg-green-deep text-white text-sm font-semibold hover:opacity-90 transition-opacity"
         >
           {t('bot.see_all')}
@@ -205,7 +212,7 @@ function ResultsScreen({ onReset }: { onReset: () => void }) {
 
 function BotWindow({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation()
-  const { step, answers, nextStep, setResults, open } = useFlowerBotStore()
+  const { step, answers, nextStep, open } = useFlowerBotStore()
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const currentQuestion = BOT_QUESTIONS.find((q) => q.id === step)
@@ -231,18 +238,23 @@ function BotWindow({ onClose }: { onClose: () => void }) {
     }
   }
 
-  // When results step reached, calculate products
-  useEffect(() => {
-    if (step === 'results') {
-      const found = filterProducts(answers)
-      setResults(found)
-    }
-  }, [step, answers, setResults])
+  // Весь каталог нужен для ранжирования; грузим один раз и кешируем
+  const catalog = useQuery({
+    queryKey: ['products', 'bot-catalog'],
+    queryFn: fetchAllProducts,
+    enabled: step === 'results',
+    staleTime: 60_000,
+  })
+  const results = useMemo(
+    () => (catalog.data ? filterProducts(answers, catalog.data) : []),
+    [catalog.data, answers],
+  )
+  const loadingResults = step === 'results' && catalog.isPending
 
   // Auto-scroll to bottom when answers or step changes
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: 9999, behavior: 'smooth' })
-  }, [answers, step])
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
+  }, [answers, step, loadingResults])
 
   const handleAnswer = (_questionId: string, optionId: string, field: keyof typeof answers) => {
     nextStep(optionId, field)
@@ -319,8 +331,15 @@ function BotWindow({ onClose }: { onClose: () => void }) {
               options={currentQuestion.options}
               onSelect={(id) => handleAnswer(currentQuestion.id, id, currentQuestion.field)}
             />
+          ) : step === 'results' && loadingResults ? (
+            <div key="loading" role="status" className="text-sm text-muted text-center py-5">{t('common.loading')}</div>
+          ) : step === 'results' && catalog.isError ? (
+            <div role="alert" className="text-sm text-center py-5">
+              <p>{t('catalog.load_error')}</p>
+              <button type="button" className="min-h-11 underline" onClick={() => void catalog.refetch()}>{t('catalog.retry')}</button>
+            </div>
           ) : step === 'results' ? (
-            <ResultsScreen key="results" onReset={handleReset} />
+            <ResultsScreen key="results" results={results} onReset={handleReset} />
           ) : null}
         </AnimatePresence>
       </div>

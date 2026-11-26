@@ -3,9 +3,41 @@ import { calcEarn, getTier, TIERS, MIN_REDEEM, MAX_REDEEM_PCT } from '@/features
 import { applyHolidayPrice } from '@/shared/lib/holiday'
 import { findPromo } from '@/shared/config/promotionConfig'
 import { pluralPoints } from '@/shared/lib/pluralize'
-import { unitPrice } from '@/features/cart/store'
+import { unitPrice, useCartStore, MAX_CART_LINE_QUANTITY } from '@/features/cart/store'
+import { MOCK_PRODUCTS } from '@/entities/product/mock'
+import { filterProducts } from '@/features/flowerBot/botScript'
 import { BASKET_SURCHARGE } from '@/shared/config/packagingConfig'
 import type { Product, ProductSize } from '@/entities/product/types'
+
+describe('catalog purchase flow', () => {
+  it('caps quantities and never adds unavailable products', () => {
+    const { addItem, clearCart, updateQuantity } = useCartStore.getState()
+    const product = MOCK_PRODUCTS[0]
+    clearCart()
+    try {
+      addItem({ ...product, inStock: false }, product.sizes[0])
+      expect(useCartStore.getState().items).toHaveLength(0)
+      addItem(product, product.sizes[0])
+      const { id } = useCartStore.getState().items[0]
+      updateQuantity(id, MAX_CART_LINE_QUANTITY)
+      addItem(product, product.sizes[0])
+      updateQuantity(id, 1.5)
+      expect(useCartStore.getState().items[0].quantity).toBe(MAX_CART_LINE_QUANTITY)
+    } finally {
+      clearCart()
+    }
+  })
+
+  it('ranks the requested occasion first and respects stock and same-day delivery', () => {
+    const product = MOCK_PRODUCTS[0]
+    const base = { ...product, inStock: true, deliverToday: true }
+    const matches: Product = { ...base, id: 'match', occasions: ['romantic'], rating: 4 }
+    const fallback: Product = { ...base, id: 'fallback', occasions: ['birthday'], rating: 5 }
+    expect(filterProducts({ occasion: 'romance', urgency: 'today' }, [
+      fallback, matches, { ...matches, inStock: false }, { ...matches, deliverToday: false },
+    ]).map(({ id }) => id)).toEqual(['match', 'fallback'])
+  })
+})
 
 // Loyalty: calcEarn
 

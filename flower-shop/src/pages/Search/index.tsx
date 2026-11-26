@@ -7,10 +7,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { usePageTitle } from '@/shared/hooks/usePageTitle'
 import { useDebounce } from '@/shared/hooks/useDebounce'
 import { useLocalStorage } from '@/shared/hooks/useLocalStorage'
-import { MOCK_PRODUCTS } from '@/entities/product/mock'
-import { ProductCard } from '@/entities/product/ProductCard'
+import { ProductCard, ProductCardSkeleton } from '@/entities/product/ProductCard'
+import { useProducts } from '@/entities/product/queries'
+import { Button } from '@/shared/ui/Button'
 import { MAX_RECENT_SEARCHES } from '@/shared/config/appConfig'
-import type { Product } from '@/entities/product/types'
 
 const POPULAR_QUERIES = ['розы', 'пионы', 'тюльпаны', 'букет', 'орхидеи', 'сухоцветы']
 
@@ -29,18 +29,6 @@ function highlight(text: string, query: string): React.ReactElement {
   )
 }
 
-function filterProducts(query: string): Product[] {
-  if (!query.trim()) return []
-  const q = query.toLowerCase()
-  return MOCK_PRODUCTS.filter(
-    (p) =>
-      p.name.toLowerCase().includes(q) ||
-      p.composition.toLowerCase().includes(q) ||
-      p.occasions.some((o) => o.toLowerCase().includes(q)) ||
-      p.flowerTypes.some((f) => f.toLowerCase().includes(q))
-  )
-}
-
 export function SearchPage() {
   const { t } = useTranslation()
   const [params, setParams] = useSearchParams()
@@ -55,7 +43,10 @@ export function SearchPage() {
     []
   )
 
-  const results = filterProducts(debouncedQ)
+  const q = debouncedQ.trim()
+  const { data, isLoading, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useProducts({ q }, q.length >= 2)
+  const results = data?.pages.flatMap(({ items }) => items) ?? []
 
   useEffect(() => {
     if (debouncedQ.trim().length >= 2) {
@@ -199,7 +190,16 @@ export function SearchPage() {
               </div>
             </div>
 
-            {results.length > 0 ? (
+            {isLoading ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" aria-busy="true">
+                {[0, 1, 2, 3].map((i) => <ProductCardSkeleton key={i} />)}
+              </div>
+            ) : isError ? (
+              <div role="alert" className="space-y-3 text-center py-8">
+                <p>{t('catalog.load_error')}</p>
+                <Button variant="outline" onClick={() => void refetch()}>{t('catalog.retry')}</Button>
+              </div>
+            ) : results.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {results.map((p) => (
                   <div key={p.id} onClick={() => addRecent(query.trim())}>
@@ -233,6 +233,13 @@ export function SearchPage() {
                 >
                   {t('common.to_home')} →
                 </Link>
+              </div>
+            )}
+            {hasNextPage && (
+              <div className="mt-6 text-center">
+                <Button variant="outline" loading={isFetchingNextPage} onClick={() => void fetchNextPage()}>
+                  {t('common.show_more')}
+                </Button>
               </div>
             )}
           </motion.div>

@@ -17,6 +17,8 @@ export interface CartItem {
   stemCount?: number
 }
 
+export const MAX_CART_LINE_QUANTITY = 20
+
 interface CartStore {
   items: CartItem[]
   isOpen: boolean
@@ -38,6 +40,8 @@ interface CartStore {
   count: () => number
   promoCode: string
   promoDiscount: number
+  promoFixed: number
+  discountAmount: () => number
   applyPromo: (code: string) => Promise<boolean>
   clearPromo: () => void
 }
@@ -60,9 +64,14 @@ export const useCartStore = create<CartStore>()(
       isOpen: false,
       promoCode: '',
       promoDiscount: 0,
+      promoFixed: 0,
 
       addItem: (product, size, opts = {}) => {
-        const packaging = opts.packaging ?? 'no_basket'
+        if (!product.inStock || !product.sizes.some((variant) => variant.id === size.id)) return
+        const packaging = opts.packaging ?? (
+          product.packagingOptions.includes('no_basket') ? 'no_basket' : product.packagingOptions[0] ?? 'no_basket'
+        )
+        if (product.packagingOptions.length && !product.packagingOptions.includes(packaging)) return
         const stemCount = opts.stemCount
         const snapshotPrice = opts.snapshotPrice ?? unitPrice(product, size, packaging, stemCount)
         const key =
@@ -75,7 +84,7 @@ export const useCartStore = create<CartStore>()(
           if (existing) {
             return {
               items: state.items.map((i) =>
-                i.id === key ? { ...i, quantity: i.quantity + 1 } : i
+                i.id === key ? { ...i, quantity: Math.min(MAX_CART_LINE_QUANTITY, i.quantity + 1) } : i
               ),
             }
           }
@@ -91,25 +100,31 @@ export const useCartStore = create<CartStore>()(
       removeItem: (id) => set((state) => ({ items: state.items.filter((i) => i.id !== id) })),
 
       updateQuantity: (id, quantity) => {
+        if (!Number.isInteger(quantity)) return
         if (quantity <= 0) {
           get().removeItem(id)
           return
         }
-        set((state) => ({ items: state.items.map((i) => (i.id === id ? { ...i, quantity } : i)) }))
+        set((state) => ({
+          items: state.items.map((i) => i.id === id ? { ...i, quantity: Math.min(MAX_CART_LINE_QUANTITY, quantity) } : i),
+        }))
       },
 
-      clearCart: () => set({ items: [], promoCode: '', promoDiscount: 0 }),
+      clearCart: () => set({ items: [], promoCode: '', promoDiscount: 0, promoFixed: 0 }),
       openCart: () => set({ isOpen: true }),
       closeCart: () => set({ isOpen: false }),
       toggleCart: () => set((s) => ({ isOpen: !s.isOpen })),
 
       subtotal: () => get().items.reduce((s, i) => s + i.snapshotPrice * i.quantity, 0),
 
-      total: () => {
-        const subtotal = get().subtotal()
-        const { promoDiscount } = get()
-        return subtotal - Math.round((subtotal * promoDiscount) / 100)
+      discountAmount: () => {
+        const { subtotal, promoDiscount, promoFixed, promoCode } = get()
+        const amount = subtotal()
+        if (!promoCode) return 0
+        if (!API_ENABLED && amount < (findPromo(promoCode)?.minOrder ?? Infinity)) return 0
+        return Math.min(amount, promoFixed || Math.round((amount * promoDiscount) / 100))
       },
+      total: () => get().subtotal() - get().discountAmount(),
 
       count: () => get().items.reduce((s, i) => s + i.quantity, 0),
 
@@ -118,8 +133,8 @@ export const useCartStore = create<CartStore>()(
         if (API_ENABLED) {
           try {
             const res = await apiValidatePromo(code.trim(), subtotal)
-            if (res.discountPercent <= 0) return false
-            set({ promoCode: res.code, promoDiscount: res.discountPercent })
+            if (res.discountAmount <= 0) return false
+            set({ promoCode: res.code, promoDiscount: res.discountPercent, promoFixed: res.discountFixed })
             return true
           } catch {
             return false
@@ -128,11 +143,11 @@ export const useCartStore = create<CartStore>()(
         await new Promise((r) => setTimeout(r, 400))
         const promo = findPromo(code)
         if (!promo || subtotal < promo.minOrder) return false
-        set({ promoCode: promo.code, promoDiscount: promo.discountPct })
+        set({ promoCode: promo.code, promoDiscount: promo.discountPct, promoFixed: 0 })
         return true
       },
 
-      clearPromo: () => set({ promoCode: '', promoDiscount: 0 }),
+      clearPromo: () => set({ promoCode: '', promoDiscount: 0, promoFixed: 0 }),
     }),
     {
       name: 'flower-cart',

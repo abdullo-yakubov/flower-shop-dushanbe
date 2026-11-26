@@ -17,7 +17,8 @@ public record CreateOrderRequest(
     string? RecipientPhone = null,
     bool IsAnonymous = false,
     string? PromoCode = null,
-    int RedeemPoints = 0
+    int RedeemPoints = 0,
+    int? ExpectedTotal = null
 );
 
 public record CreateOrderItem(

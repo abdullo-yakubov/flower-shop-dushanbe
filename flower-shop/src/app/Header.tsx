@@ -15,26 +15,11 @@ import { LangSwitcher } from '@/shared/ui/LangSwitcher'
 
 function CartBadge({ count }: { count: number }) {
   const pulseKey = useCartFlyStore((s) => s.pulseKey)
-  const [prev, setPrev] = useState(count)
-  const [animKey, setAnimKey] = useState(0)
-  const [prevPulseKey, setPrevPulseKey] = useState(pulseKey)
-
-  if (count !== prev) {
-    setPrev(count)
-    setAnimKey((k) => k + 1)
-  }
-
-  if (pulseKey !== prevPulseKey) {
-    setPrevPulseKey(pulseKey)
-    if (pulseKey > 0) {
-      setAnimKey((k) => k + 1)
-    }
-  }
 
   if (count === 0) return null
   return (
     <motion.span
-      key={animKey}
+      key={`${count}-${pulseKey}`}
       initial={{ scale: 1 }}
       animate={{ scale: [1, 1.35, 1] }}
       transition={{ duration: 0.4, type: 'spring', stiffness: 400, damping: 10 }}
@@ -79,7 +64,7 @@ export function Header() {
         scrolled ? 'bg-cream/80 backdrop-blur-md shadow-[0_1px_12px_rgba(0,0,0,0.08)]' : 'bg-cream'
       }`}
     >
-      <div className="max-w-7xl mx-auto h-full px-4 md:px-6 flex items-center gap-4">
+      <div className="max-w-7xl mx-auto h-full px-3 md:px-6 flex items-center gap-1 sm:gap-4">
         {/* Logo */}
         <Link
           to="/"
@@ -87,6 +72,9 @@ export function Header() {
           className="shrink-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-deep/40"
         >
           <Logo compact />
+        </Link>
+        <Link to="/catalog" className="hidden lg:inline-flex text-sm font-medium text-ink hover:text-green-deep">
+          {t('nav.catalog')}
         </Link>
 
         {/* Desktop search */}
@@ -127,7 +115,7 @@ export function Header() {
           {/* Favorites */}
           <Link
             to="/account/favorites"
-            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-ink/5 transition-colors relative text-ink"
+            className="hidden md:flex w-10 h-10 items-center justify-center rounded-full hover:bg-ink/5 transition-colors relative text-ink"
             aria-label={`${t('header.favorites_aria')} (${favCount})`}
           >
             <HeartIcon />
@@ -151,7 +139,7 @@ export function Header() {
 
           {/* Profile */}
           <button
-            className="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-ink/5 transition-colors text-ink"
+            className="relative hidden md:flex w-10 h-10 items-center justify-center rounded-full hover:bg-ink/5 transition-colors text-ink"
             onClick={() => (user ? navigate('/account') : openModal())}
             aria-label={user ? t('header.profile_aria') : t('nav.login')}
           >

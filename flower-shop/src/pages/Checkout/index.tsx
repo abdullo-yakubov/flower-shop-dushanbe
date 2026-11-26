@@ -1,9 +1,10 @@
-import { Banknote, BellRing, Check, CreditCard, Smartphone, Star } from 'lucide-react'
+import { Banknote, BellRing, Check, Star } from 'lucide-react'
 import { useState, useMemo, useEffect } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -21,16 +22,16 @@ import { formatPrice } from '@/shared/lib/format'
 import { useCheckoutResources, type CheckoutAddon } from './useCheckoutResources'
 import { API_ENABLED, extractError } from '@/shared/lib/api/client'
 import { DELIVERY_PRICE_DEFAULT, FREE_DELIVERY_THRESHOLD } from '@/shared/config/appConfig'
-import { apiCreateOrder } from '@/shared/lib/api/orders'
+import { apiCreateOrder, apiQuoteOrder } from '@/shared/lib/api/orders'
+import { useAuthStore } from '@/features/auth/store'
 import { toast } from '@/shared/ui/toast.store'
+import { thumbImage } from '@/shared/lib/image'
 
 // Config
 
 const DELIVERY_FEE = DELIVERY_PRICE_DEFAULT
 
 const PAYMENTS = [
-  { id: 'dc', tKey: 'checkout.pay_dc', icon: CreditCard },
-  { id: 'alif', tKey: 'checkout.pay_alif', icon: Smartphone },
   { id: 'cash', tKey: 'checkout.pay_cash', icon: Banknote },
 ] as const
 
@@ -40,19 +41,18 @@ const TIMES = TIME_SLOTS
 // Helpers
 
 function getDeliveryDates(t: TFunction) {
-  const today = new Date()
+  const today = new Date(Date.now() + 5 * 60 * 60 * 1000)
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(today)
-    d.setDate(today.getDate() + i)
+    d.setUTCDate(today.getUTCDate() + i)
     return {
       label:
         i === 0
           ? t('checkout.delivery_today')
           : i === 1
             ? t('checkout.delivery_tomorrow')
-            : `${t(`checkout.day_${d.getDay()}`)} ${d.getDate()}`,
-      // Local calendar date — toISOString() is UTC and shifts "today" back a day before 05:00 in Dushanbe
-      value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+            : `${t(`checkout.day_${d.getUTCDay()}`)} ${d.getUTCDate()}`,
+      value: d.toISOString().slice(0, 10),
     }
   })
 }
@@ -65,15 +65,23 @@ function makeSchema(t: TFunction) {
     recipientName: z.string().optional(),
     recipientPhone: z.string().optional(),
     anonymous: z.boolean().optional(),
-    address: z.string().min(5, t('checkout.err_address')),
-    date: z.string().min(1, t('checkout.err_date')),
-    time: z.string().min(1, t('checkout.err_time')),
+    address: z.string().trim().min(5, t('checkout.err_address')).max(500),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, t('checkout.err_date')),
+    time: z.string().refine((value) => TIMES.some((slot) => slot === value), t('checkout.err_time')),
     payment: z.enum(['dc', 'alif', 'cash']),
-    name: z.string().min(2, t('checkout.err_name')),
+    name: z.string().trim().min(2, t('checkout.err_name')).max(100),
     phone: z
       .string()
       .min(9, t('checkout.err_phone'))
-      .regex(/^\+992/, t('checkout.err_phone_format')),
+      .regex(/^\+992[0-9]{9}$/, t('checkout.err_phone_format')),
+  }).superRefine((data, ctx) => {
+    if (!data.isGift) return
+    if (!data.recipientName?.trim() || data.recipientName.length > 100) {
+      ctx.addIssue({ code: 'custom', path: ['recipientName'], message: t('checkout.err_name') })
+    }
+    if (!/^\+992[0-9]{9}$/.test(data.recipientPhone ?? '')) {
+      ctx.addIssue({ code: 'custom', path: ['recipientPhone'], message: t('checkout.err_phone_format') })
+    }
   })
 }
 type FormData = z.infer<ReturnType<typeof makeSchema>>
@@ -169,7 +177,8 @@ function AddonItem({
 export function CheckoutPage() {
   const { t, i18n } = useTranslation()
   usePageTitle(t('checkout.title'))
-  const { items, total, promoDiscount, clearCart } = useCartStore()
+  const { items, total, promoCode, discountAmount, clearCart } = useCartStore()
+  const { user, openModal } = useAuthStore()
   const { addOrder, confirmOrder, discardOrder } = useOrdersStore()
   const {
     points: loyaltyBalance,
@@ -178,7 +187,6 @@ export function CheckoutPage() {
     maxRedeemable,
     syncFromServer: syncLoyalty,
   } = useLoyaltyStore()
-  const navigate = useNavigate()
   const {
     addons: ADDONS,
     postcards: POSTCARD_DESIGNS,
@@ -217,24 +225,45 @@ export function CheckoutPage() {
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { isGift: false, payment: 'dc', phone: '+992' },
+    defaultValues: { isGift: false, payment: 'cash', phone: '+992' },
   })
 
   const isGift = useWatch({ control, name: 'isGift', defaultValue: false })
   const selectedDate = useWatch({ control, name: 'date' })
   const selectedTime = useWatch({ control, name: 'time' })
-  const selectedPayment = useWatch({ control, name: 'payment', defaultValue: 'dc' })
+  const selectedPayment = useWatch({ control, name: 'payment', defaultValue: 'cash' })
+  const canDeliverToday = items.every(({ product }) => product.deliverToday)
 
   // Use snapshotPrice — price locked at the time of adding to cart
   const subtotal = items.reduce((s, i) => s + i.snapshotPrice * i.quantity, 0)
-  const delivery = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE
-  const discount = promoDiscount ? Math.round((subtotal * promoDiscount) / 100) : 0
-  const addonsTotal = ADDONS.reduce((s, a) => s + (addonQtys[a.id] || 0) * a.price, 0)
-  const pointsDiscount = usePoints ? redeemAmt : 0
-  const grandTotal = total() + delivery + addonsTotal - pointsDiscount
-
-  const willEarn = calcEarn(grandTotal)
-  const maxPts = maxRedeemable(total() + delivery + addonsTotal)
+  const localDelivery = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE
+  const localAddons = ADDONS.reduce((s, a) => s + (addonQtys[a.id] || 0) * a.price, 0)
+  const maxPts = maxRedeemable(total() + localDelivery + localAddons)
+  const requestedPoints = usePoints && Math.min(redeemAmt, maxPts) >= MIN_REDEEM ? Math.min(redeemAmt, maxPts) : 0
+  const pricingInput = {
+    items: items.map(({ product, size, quantity, packaging, stemCount }) => ({
+      productId: product.id, sizeId: size.id, quantity, packaging, stemCount,
+    })),
+    addons: ADDONS.filter((addon) => addonQtys[addon.id] > 0).map(({ id }) => ({
+      addonId: id, quantity: addonQtys[id], inscription: inscriptions[id] || undefined,
+    })),
+    deliveryDate: selectedDate ?? '',
+    promoCode: promoCode || undefined,
+    redeemPoints: requestedPoints,
+  }
+  const quoteQuery = useQuery({
+    queryKey: ['order-quote', user?.id, pricingInput],
+    queryFn: ({ signal }) => apiQuoteOrder(pricingInput, signal),
+    enabled: API_ENABLED && !!user && !!selectedDate && items.length > 0,
+    retry: false,
+  })
+  const quote = API_ENABLED ? quoteQuery.data : undefined
+  const delivery = quote?.deliveryFee ?? localDelivery
+  const discount = quote?.promoDiscount ?? discountAmount()
+  const addonsTotal = quote?.addonsTotal ?? localAddons
+  const pointsDiscount = quote?.pointsDiscount ?? requestedPoints
+  const grandTotal = quote?.total ?? (subtotal - discount + delivery + addonsTotal - pointsDiscount)
+  const willEarn = quote?.earnPoints ?? calcEarn(grandTotal)
 
   const selectedPostcard = POSTCARD_DESIGNS.find((d) => d.id === selectedDesign)
 
@@ -253,7 +282,11 @@ export function CheckoutPage() {
   }
 
   const onSubmit = async (data: FormData) => {
-    if (loading) return // guard against double submit
+    if (loading || !items.length || (API_ENABLED && (!quote || quoteQuery.isFetching || quoteQuery.isError))) return
+    if (!DATES.some(({ value }) => value === data.date) || (!canDeliverToday && data.date === DATES[0].value)) {
+      toast.error(t('checkout.err_date'))
+      return
+    }
     setLoading(true)
     let tempId: string | null = null
     try {
@@ -279,10 +312,10 @@ export function CheckoutPage() {
         })),
         addons: orderAddons,
         cardText: cardText || undefined,
-        subtotal: subtotal + addonsTotal,
+        subtotal: (quote?.itemsSubtotal ?? subtotal) + addonsTotal,
         deliveryFee: delivery,
         promoDiscount: discount,
-        pointsDiscount: usePoints ? redeemAmt : 0,
+        pointsDiscount,
         total: grandTotal,
         address: data.address,
         deliveryDate: DATES.find((d) => d.value === data.date)?.label ?? data.date,
@@ -293,18 +326,7 @@ export function CheckoutPage() {
       if (API_ENABLED) {
         // Submit to backend
         const result = await apiCreateOrder({
-          items: items.map((i) => ({
-            productId: i.product.id,
-            sizeId: i.size.id,
-            quantity: i.quantity,
-            packaging: i.packaging,
-            stemCount: i.stemCount ?? undefined,
-          })),
-          addons: orderAddons.map((a) => ({
-            addonId: a.id,
-            quantity: a.quantity,
-            inscription: a.inscription,
-          })),
+          ...pricingInput,
           postcardId: selectedDesign || undefined,
           cardText: cardText || undefined,
           address: data.address,
@@ -317,8 +339,7 @@ export function CheckoutPage() {
           recipientName: data.recipientName,
           recipientPhone: data.recipientPhone,
           isAnonymous: data.anonymous,
-          promoCode: useCartStore.getState().promoCode || undefined,
-          redeemPoints: usePoints && redeemAmt >= MIN_REDEEM ? redeemAmt : undefined,
+          expectedTotal: quote?.total,
         })
 
         // Confirm local order with server-issued number
@@ -327,14 +348,14 @@ export function CheckoutPage() {
         setEarnedPts(result.earnedPoints)
 
         // Redeem points locally to keep store in sync
-        if (usePoints && redeemAmt >= MIN_REDEEM) redeemPoints(redeemAmt)
+        if (pointsDiscount > 0) redeemPoints(pointsDiscount)
 
         // Refresh loyalty balance from server
         void syncLoyalty()
       } else {
         // Mock path: simulate delay + local points
         await new Promise((r) => setTimeout(r, 1500))
-        if (usePoints && redeemAmt >= MIN_REDEEM) redeemPoints(redeemAmt)
+        if (pointsDiscount > 0) redeemPoints(pointsDiscount)
         const earned = earnPoints(grandTotal)
         setEarnedPts(earned)
         setOrderNum(tempId)
@@ -346,6 +367,7 @@ export function CheckoutPage() {
       // The server rejected the order — remove the optimistic copy so history stays truthful
       if (tempId) discardOrder(tempId)
       const apiError = extractError(err)
+      if (apiError.code === 'PRICE_CHANGED') void quoteQuery.refetch()
       toast.error(
         apiError.code === 'NETWORK_ERROR' || apiError.code === 'UNKNOWN'
           ? t('checkout.order_error')
@@ -357,8 +379,7 @@ export function CheckoutPage() {
   }
 
   if (items.length === 0 && !success && !loading) {
-    navigate('/')
-    return null
+    return <Navigate to="/cart" replace />
   }
 
   if (success) return <SuccessScreen orderNum={orderNum} earnedPts={earnedPts} />
@@ -405,9 +426,10 @@ export function CheckoutPage() {
                   exit={{ opacity: 0, height: 0 }}
                   className="overflow-hidden space-y-3"
                 >
-                  <Input label={t('checkout.recipient_name')} {...register('recipientName')} />
+                  <Input label={t('checkout.recipient_name')} error={errors.recipientName?.message} {...register('recipientName')} />
                   <Input
                     label={t('checkout.recipient_phone')}
+                    error={errors.recipientPhone?.message}
                     type="tel"
                     {...register('recipientPhone')}
                   />
@@ -578,13 +600,15 @@ export function CheckoutPage() {
             />
             <div>
               <p className="text-sm font-semibold text-ink mb-2">{t('checkout.date')}</p>
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                {DATES.map((d) => (
+              <div className="occasion-rail flex gap-2 overflow-x-auto pb-2">
+                {DATES.map((d, index) => (
                   <button
                     key={d.value}
                     type="button"
-                    onClick={() => setValue('date', d.value)}
-                    className={`shrink-0 px-4 py-2.5 rounded-xl text-sm font-medium border-2 transition-all duration-150 ${
+                    disabled={index === 0 && !canDeliverToday}
+                    aria-pressed={selectedDate === d.value}
+                    onClick={() => setValue('date', d.value, { shouldValidate: true })}
+                    className={`shrink-0 min-h-11 px-4 py-2.5 rounded-xl text-sm font-medium border-2 transition-colors duration-150 disabled:opacity-45 ${
                       selectedDate === d.value
                         ? 'border-green-deep bg-green-deep text-white'
                         : 'border-border hover:border-green-deep/40 bg-surface text-ink'
@@ -603,7 +627,8 @@ export function CheckoutPage() {
                   <button
                     key={slot}
                     type="button"
-                    onClick={() => setValue('time', slot)}
+                    aria-pressed={selectedTime === slot}
+                    onClick={() => setValue('time', slot, { shouldValidate: true })}
                     className={`px-4 py-2 rounded-full text-sm border-2 transition-all duration-150 ${
                       selectedTime === slot
                         ? 'border-green-deep bg-green-deep text-white'
@@ -620,6 +645,7 @@ export function CheckoutPage() {
 
           {/* 5. Оплата */}
           <Section num={5} title={t('checkout.payment')}>
+            <p className="text-sm text-muted mb-3">{t('checkout.cash_only_notice')}</p>
             {PAYMENTS.map((pay) => (
               <label
                 key={pay.id}
@@ -654,14 +680,11 @@ export function CheckoutPage() {
             </h2>
 
             {items.map((item) => {
-              const price =
-                item.stemCount != null && item.product.stemPrice
-                  ? item.product.stemPrice * item.stemCount
-                  : item.size.price
+              const price = item.snapshotPrice
               return (
                 <div key={item.id} className="flex items-center gap-3">
                   <img
-                    src={item.product.images[0]}
+                    src={thumbImage(item.product.images[0])}
                     alt=""
                     className="w-12 h-12 rounded-lg object-cover shrink-0"
                   />
@@ -702,7 +725,7 @@ export function CheckoutPage() {
               <div className="flex justify-between text-sm text-muted">
                 <span>{t('checkout.items')}</span>
                 <span className="tabular-nums">
-                  {subtotal} {t('common.som')}
+                  {quote?.itemsSubtotal ?? subtotal} {t('common.som')}
                 </span>
               </div>
               {addonsTotal > 0 && (
@@ -746,7 +769,7 @@ export function CheckoutPage() {
               )}
               <div className="flex justify-between font-semibold text-base pt-1 border-t border-border text-ink">
                 <span>{t('common.total')}</span>
-                <span className="tabular-nums text-green-deep">{formatPrice(grandTotal)}</span>
+                <span className="tabular-nums text-green-deep">{API_ENABLED && !quote ? '—' : formatPrice(grandTotal)}</span>
               </div>
             </div>
 
@@ -766,9 +789,25 @@ export function CheckoutPage() {
               </p>
             </div>
 
-            <Button type="submit" fullWidth size="lg" loading={loading}>
-              {loading ? '' : t('checkout.pay_button', { total: formatPrice(grandTotal) })}
-            </Button>
+            {API_ENABLED && !user ? (
+              <>
+                <p className="text-sm text-muted">{t('checkout.quote_login')}</p>
+                <Button type="button" fullWidth onClick={openModal}>{t('nav.login')}</Button>
+              </>
+            ) : (
+              <>
+                {quoteQuery.isFetching && <p role="status" className="text-sm text-muted">{t('checkout.quote_pending')}</p>}
+                {quoteQuery.isError && (
+                  <div role="alert" className="text-sm text-error">
+                    <p>{extractError(quoteQuery.error).message}</p>
+                    <Button type="button" variant="outline" onClick={() => void quoteQuery.refetch()}>{t('catalog.retry')}</Button>
+                  </div>
+                )}
+                <Button type="submit" fullWidth size="lg" loading={loading} disabled={API_ENABLED && (!quote || quoteQuery.isFetching || quoteQuery.isError)}>
+                  {loading ? '' : API_ENABLED && !quote ? t('cart.checkout') : t('checkout.pay_button', { total: formatPrice(grandTotal) })}
+                </Button>
+              </>
+            )}
             <p className="text-[10px] text-center text-muted">{t('checkout.pay_agreement')}</p>
           </div>
 
@@ -946,7 +985,7 @@ function SuccessScreen({ orderNum, earnedPts }: { orderNum: string; earnedPts: n
         >
           {t('checkout.order_number')} <span className="font-semibold text-ink">{orderNum}</span>
         </motion.p>
-        <p className="text-sm text-muted">{t('checkout.order_success_hint')}</p>
+        <p className="text-sm text-muted">{t(API_ENABLED ? 'checkout.order_success_hint' : 'checkout.demo_success_hint')}</p>
       </motion.div>
 
       {/* Earned points banner */}

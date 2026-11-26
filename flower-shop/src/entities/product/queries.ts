@@ -9,7 +9,7 @@ export const productKeys = {
   reviews: (id: string) => ['products', 'reviews', id] as const,
 }
 
-export function useProducts(filters: Omit<ProductFilters, 'page'>) {
+export function useProducts(filters: Omit<ProductFilters, 'page'>, enabled = true) {
   return useInfiniteQuery({
     queryKey: productKeys.list(filters),
     queryFn: ({ pageParam }) => fetchProducts({ ...filters, page: pageParam as number }),
@@ -19,6 +19,7 @@ export function useProducts(filters: Omit<ProductFilters, 'page'>) {
       return loaded < last.total ? all.length + 1 : undefined
     },
     staleTime: 60_000,
+    enabled,
   })
 }
 

@@ -116,7 +116,7 @@ export function CookieConsent() {
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 80, opacity: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30, delay: 1 }}
-        className="fixed bottom-16 md:bottom-4 inset-x-0 z-40 flex justify-center px-4 pointer-events-none"
+        className="fixed bottom-16 md:bottom-4 inset-x-0 z-[95] flex justify-center px-4 pointer-events-none"
       >
         <div className="bg-surface rounded-2xl shadow-2xl border border-border p-5 w-full max-w-lg pointer-events-auto">
           <p className="flex items-center gap-2 text-sm font-semibold text-ink mb-1">

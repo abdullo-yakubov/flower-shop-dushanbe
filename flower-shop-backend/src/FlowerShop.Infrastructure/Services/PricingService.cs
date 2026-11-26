@@ -54,7 +54,8 @@ public class PricingService(AppDbContext db)
     public async Task<PriceQuote> QuoteAsync(Guid userId, OrderPricingInput input, CancellationToken ct)
     {
         var holiday = await FindHolidayAsync(input.DeliveryDate, ct);
-        var items = await ResolveItemsAsync(input.Items, holiday, ct);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(5));
+        var items = await ResolveItemsAsync(input.Items, holiday, input.DeliveryDate == today, ct);
         var addons = await ResolveAddonsAsync(input.Addons, ct);
 
         var itemsSubtotal = items.Sum(i => i.LineTotal);
@@ -75,7 +76,7 @@ public class PricingService(AppDbContext db)
     // Items
 
     private async Task<List<PricedItem>> ResolveItemsAsync(
-        IEnumerable<CreateOrderItem> requested, HolidayPricing? holiday, CancellationToken ct)
+        IEnumerable<CreateOrderItem> requested, HolidayPricing? holiday, bool requiresSameDay, CancellationToken ct)
     {
         var lines = requested.ToList();
         if (lines.Count == 0)
@@ -100,6 +101,8 @@ public class PricingService(AppDbContext db)
                 throw new AppException("VALIDATION_ERROR", "Размер не относится к выбранному товару");
             if (!product.IsActive || !product.InStock)
                 throw new AppException("OUT_OF_STOCK", $"Товар «{product.NameRu}» закончился");
+            if (requiresSameDay && !product.DeliverToday)
+                throw new AppException("DELIVERY_UNAVAILABLE", $"Товар «{product.NameRu}» недоступен для доставки сегодня");
             if (line.Quantity is < 1 or > OrderConstants.MaxLineQuantity)
                 throw new AppException("VALIDATION_ERROR", $"Количество должно быть от 1 до {OrderConstants.MaxLineQuantity}");
 

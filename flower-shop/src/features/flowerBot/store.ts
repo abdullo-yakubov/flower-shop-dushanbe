@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import type { Product } from '@/entities/product/types'
 
 export type BotStep = 'idle' | 'for_whom' | 'occasion' | 'budget' | 'urgency' | 'results'
 
@@ -14,11 +13,9 @@ interface FlowerBotStore {
   isOpen: boolean
   step: BotStep
   answers: BotAnswers
-  results: Product[]
   open: () => void
   close: () => void
   nextStep: (answer: string, field: keyof BotAnswers) => void
-  setResults: (products: Product[]) => void
   reset: () => void
 }
 
@@ -26,13 +23,12 @@ const initialState = {
   isOpen: false,
   step: 'idle' as BotStep,
   answers: {},
-  results: [],
 }
 
 export const useFlowerBotStore = create<FlowerBotStore>((set) => ({
   ...initialState,
 
-  open: () => set({ isOpen: true, step: 'for_whom', answers: {}, results: [] }),
+  open: () => set({ isOpen: true, step: 'for_whom', answers: {} }),
 
   close: () => set({ isOpen: false }),
 
@@ -44,8 +40,6 @@ export const useFlowerBotStore = create<FlowerBotStore>((set) => ({
       const nextStep = steps[currentIdx + 1] ?? 'results'
       return { answers, step: nextStep }
     }),
-
-  setResults: (results) => set({ results }),
 
   reset: () => set({ ...initialState }),
 }))

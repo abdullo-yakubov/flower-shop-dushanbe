@@ -103,11 +103,11 @@ public static class DatabaseSeeder
         var redRoses = AddProduct(db, "krasnye-rozy-25", "Красные розы «Страсть»", "Red Roses «Passion»",
             "25 роз сорта Фридом, гипсофила, атласная лента",
             "25 Freedom roses, baby's breath, satin ribbon",
-            2500, 3000, 17, isHit: true, deliverToday: true, sortOrder: 1);
+            800, 960, 17, isHit: true, deliverToday: true, sortOrder: 1);
         AddImages(db, redRoses,
             "https://images.unsplash.com/photo-1548142813-c348350df52b?w=600&h=800&fit=crop&auto=format&q=80",
             "https://images.unsplash.com/photo-1455582916367-25f75bfc6710?w=600&h=800&fit=crop&auto=format&q=80");
-        AddSizes(db, redRoses, (SizeLabel.S, 1500, 0), (SizeLabel.M, 2500, 3000), (SizeLabel.L, 3800, 0));
+        AddSizes(db, redRoses, (SizeLabel.S, 480, 0), (SizeLabel.M, 800, 960), (SizeLabel.L, 1220, 0));
         AddOccasions(db, redRoses, Occasion.Birthday, Occasion.Wedding, Occasion.Romantic);
         db.ProductFlowerTypes.Add(new ProductFlowerType { ProductId = redRoses.Id, FlowerType = FlowerType.Rose });
         db.ProductColors.Add(new ProductColor { ProductId = redRoses.Id, Color = "red" });
@@ -117,11 +117,11 @@ public static class DatabaseSeeder
         var whiteLilies = AddProduct(db, "belye-lilii-7", "Белые лилии «Чистота»", "White Lilies «Purity»",
             "7 лилий Oriental, декоративная зелень, крафт-бумага",
             "7 Oriental lilies, decorative greens, kraft paper",
-            1800, 0, 0, isNew: true, deliverToday: false, sortOrder: 2);
+            580, 0, 0, isNew: true, deliverToday: false, sortOrder: 2);
         AddImages(db, whiteLilies,
             "https://images.unsplash.com/photo-1562887009-900cfe5451b4?w=600&h=800&fit=crop&auto=format&q=80",
             "https://images.unsplash.com/photo-1519378058457-4c29a0a2efac?w=600&h=800&fit=crop&auto=format&q=80");
-        AddSizes(db, whiteLilies, (SizeLabel.S, 1200, 0), (SizeLabel.M, 1800, 0), (SizeLabel.L, 2600, 0));
+        AddSizes(db, whiteLilies, (SizeLabel.S, 380, 0), (SizeLabel.M, 580, 0), (SizeLabel.L, 830, 0));
         AddOccasions(db, whiteLilies, Occasion.Birthday, Occasion.Mom, Occasion.Other);
         db.ProductFlowerTypes.Add(new ProductFlowerType { ProductId = whiteLilies.Id, FlowerType = FlowerType.Mixed });
         db.ProductColors.Add(new ProductColor { ProductId = whiteLilies.Id, Color = "white" });
@@ -131,11 +131,11 @@ public static class DatabaseSeeder
         var pinkPeonies = AddProduct(db, "rozovye-piony-15", "Розовые пионы «Нежность»", "Pink Peonies «Tenderness»",
             "15 пионов сорта Сара Бернар, листья эвкалипта",
             "15 Sarah Bernhardt peonies, eucalyptus leaves",
-            3500, 4500, 22, isHit: true, deliverToday: false, sortOrder: 3);
+            1120, 1440, 22, isHit: true, deliverToday: false, sortOrder: 3);
         AddImages(db, pinkPeonies,
             "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=800&fit=crop&auto=format&q=80",
             "https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=600&h=800&fit=crop&auto=format&q=80");
-        AddSizes(db, pinkPeonies, (SizeLabel.S, 2200, 0), (SizeLabel.M, 3500, 4500), (SizeLabel.L, 5200, 0));
+        AddSizes(db, pinkPeonies, (SizeLabel.S, 700, 0), (SizeLabel.M, 1120, 1440), (SizeLabel.L, 1660, 0));
         AddOccasions(db, pinkPeonies, Occasion.Birthday, Occasion.Wedding, Occasion.Mom);
         db.ProductFlowerTypes.Add(new ProductFlowerType { ProductId = pinkPeonies.Id, FlowerType = FlowerType.Peony });
         db.ProductColors.Add(new ProductColor { ProductId = pinkPeonies.Id, Color = "pink" });
@@ -145,11 +145,11 @@ public static class DatabaseSeeder
         var sunflowers = AddProduct(db, "podsolnukhi-11", "Подсолнухи «Солнышко»", "Sunflowers «Sunshine»",
             "11 подсолнухов, зелень, джутовая упаковка",
             "11 sunflowers, greenery, jute packaging",
-            1100, 0, 0, isHit: false, deliverToday: true, sortOrder: 4);
+            350, 0, 0, isHit: false, deliverToday: true, sortOrder: 4);
         AddImages(db, sunflowers,
             "https://images.unsplash.com/photo-1468327768560-75b778cbb551?w=600&h=800&fit=crop&auto=format&q=80",
             "https://images.unsplash.com/photo-1508700929628-666bc8bd84ea?w=600&h=800&fit=crop&auto=format&q=80");
-        AddSizes(db, sunflowers, (SizeLabel.S, 700, 0), (SizeLabel.M, 1100, 0), (SizeLabel.L, 1700, 0));
+        AddSizes(db, sunflowers, (SizeLabel.S, 220, 0), (SizeLabel.M, 350, 0), (SizeLabel.L, 540, 0));
         AddOccasions(db, sunflowers, Occasion.Birthday, Occasion.Other);
         db.ProductFlowerTypes.Add(new ProductFlowerType { ProductId = sunflowers.Id, FlowerType = FlowerType.Mixed });
         db.ProductColors.Add(new ProductColor { ProductId = sunflowers.Id, Color = "yellow" });
@@ -159,11 +159,11 @@ public static class DatabaseSeeder
         var orchids = AddProduct(db, "orkhidei-belye-3", "Орхидеи «Изысканность»", "Orchids «Elegance»",
             "3 ветки белых орхидей Фаленопсис, декоративный мох",
             "3 Phalaenopsis white orchid branches, decorative moss",
-            2800, 0, 0, isNew: true, deliverToday: false, sortOrder: 5);
+            900, 0, 0, isNew: true, deliverToday: false, sortOrder: 5);
         AddImages(db, orchids,
             "https://images.unsplash.com/photo-1566598932249-3b4cbf7ee65e?w=600&h=800&fit=crop&auto=format&q=80",
             "https://images.unsplash.com/photo-1550159930-40066082a4fc?w=600&h=800&fit=crop&auto=format&q=80");
-        AddSizes(db, orchids, (SizeLabel.S, 1800, 0), (SizeLabel.M, 2800, 0), (SizeLabel.L, 4200, 0));
+        AddSizes(db, orchids, (SizeLabel.S, 580, 0), (SizeLabel.M, 900, 0), (SizeLabel.L, 1340, 0));
         AddOccasions(db, orchids, Occasion.Birthday, Occasion.Wedding, Occasion.Other);
         db.ProductFlowerTypes.Add(new ProductFlowerType { ProductId = orchids.Id, FlowerType = FlowerType.Orchid });
         db.ProductColors.Add(new ProductColor { ProductId = orchids.Id, Color = "white" });
@@ -173,11 +173,11 @@ public static class DatabaseSeeder
         var wildMix = AddProduct(db, "lugovoy-miks-25", "Луговой микс «Полевые»", "Wildflower Mix «Meadow»",
             "25 стеблей: ромашки, лаванда, эхинацея, зелень",
             "25 stems: chamomile, lavender, echinacea, greenery",
-            1500, 1800, 17, deliverToday: true, sortOrder: 6);
+            480, 580, 17, deliverToday: true, sortOrder: 6);
         AddImages(db, wildMix,
             "https://images.unsplash.com/photo-1490750967868-88df5691cc23?w=600&h=800&fit=crop&auto=format&q=80",
             "https://images.unsplash.com/photo-1462275646964-a0e3386b89fa?w=600&h=800&fit=crop&auto=format&q=80");
-        AddSizes(db, wildMix, (SizeLabel.S, 900, 0), (SizeLabel.M, 1500, 1800), (SizeLabel.L, 2200, 0));
+        AddSizes(db, wildMix, (SizeLabel.S, 290, 0), (SizeLabel.M, 480, 580), (SizeLabel.L, 700, 0));
         AddOccasions(db, wildMix, Occasion.Birthday, Occasion.Other);
         db.ProductFlowerTypes.Add(new ProductFlowerType { ProductId = wildMix.Id, FlowerType = FlowerType.Mixed });
         db.ProductColors.Add(new ProductColor { ProductId = wildMix.Id, Color = "purple" });
@@ -187,11 +187,11 @@ public static class DatabaseSeeder
         var gerbers = AddProduct(db, "gerbery-oranzhevye-15", "Герберы «Яркость»", "Gerberas «Brightness»",
             "15 оранжевых гербер, итальянская зелень, упаковка",
             "15 orange gerberas, Italian greens, packaging",
-            1300, 0, 0, deliverToday: true, sortOrder: 7);
+            420, 0, 0, deliverToday: true, sortOrder: 7);
         AddImages(db, gerbers,
             "https://images.unsplash.com/photo-1591261730799-ee4e6c2d16d7?w=600&h=800&fit=crop&auto=format&q=80",
             "https://images.unsplash.com/photo-1520763185298-1b434c919102?w=600&h=800&fit=crop&auto=format&q=80");
-        AddSizes(db, gerbers, (SizeLabel.S, 800, 0), (SizeLabel.M, 1300, 0), (SizeLabel.L, 2000, 0));
+        AddSizes(db, gerbers, (SizeLabel.S, 260, 0), (SizeLabel.M, 420, 0), (SizeLabel.L, 640, 0));
         AddOccasions(db, gerbers, Occasion.Birthday, Occasion.Other);
         db.ProductFlowerTypes.Add(new ProductFlowerType { ProductId = gerbers.Id, FlowerType = FlowerType.Mixed });
         db.ProductColors.Add(new ProductColor { ProductId = gerbers.Id, Color = "orange" });
@@ -201,11 +201,11 @@ public static class DatabaseSeeder
         var wedding = AddProduct(db, "svadebnyy-buket-nevesta", "Свадебный букет «Невеста»", "Wedding Bouquet «Bride»",
             "21 белая роза, эустома, ранункулюс, атласная лента",
             "21 white roses, eustoma, ranunculus, satin ribbon",
-            4500, 5500, 18, isHit: true, deliverToday: false, sortOrder: 8);
+            1440, 1760, 18, isHit: true, deliverToday: false, sortOrder: 8);
         AddImages(db, wedding,
             "https://images.unsplash.com/photo-1522441815192-d9f04eb0615c?w=600&h=800&fit=crop&auto=format&q=80",
             "https://images.unsplash.com/photo-1519657337289-077653f724ed?w=600&h=800&fit=crop&auto=format&q=80");
-        AddSizes(db, wedding, (SizeLabel.S, 2800, 0), (SizeLabel.M, 4500, 5500), (SizeLabel.L, 6800, 0));
+        AddSizes(db, wedding, (SizeLabel.S, 900, 0), (SizeLabel.M, 1440, 1760), (SizeLabel.L, 2180, 0));
         AddOccasions(db, wedding, Occasion.Wedding, Occasion.Birthday);
         db.ProductFlowerTypes.Add(new ProductFlowerType { ProductId = wedding.Id, FlowerType = FlowerType.Rose });
         db.ProductColors.Add(new ProductColor { ProductId = wedding.Id, Color = "white" });

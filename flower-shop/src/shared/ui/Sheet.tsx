@@ -1,5 +1,6 @@
 ﻿import { motion, AnimatePresence } from 'framer-motion'
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useId, useRef, type ReactNode } from 'react'
+import { X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 interface SheetProps {
@@ -34,6 +35,10 @@ const variants = {
 export function Sheet({ open, onClose, side = 'right', children, title }: SheetProps) {
   const { t } = useTranslation()
   const v = variants[side]
+  const titleId = useId()
+  const panel = useRef<HTMLDivElement>(null)
+  const latestClose = useRef(onClose)
+  useEffect(() => { latestClose.current = onClose }, [onClose])
 
   useEffect(() => {
     if (open) document.body.style.overflow = 'hidden'
@@ -45,18 +50,39 @@ export function Sheet({ open, onClose, side = 'right', children, title }: SheetP
 
   useEffect(() => {
     if (!open) return
+    const previous = document.activeElement
+    panel.current?.focus()
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') latestClose.current()
+      if (e.key !== 'Tab') return
+      const items = Array.from(panel.current?.querySelectorAll<HTMLElement>(
+        'button:not(:disabled), input:not(:disabled), select:not(:disabled), a[href], [tabindex="0"]'
+      ) ?? [])
+      const first = items[0]
+      const last = items.at(-1)
+      if (!first || !last) return
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === panel.current)) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
     }
     document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [open, onClose])
+    return () => {
+      document.removeEventListener('keydown', handler)
+      if (previous instanceof HTMLElement) previous.focus()
+    }
+  }, [open])
 
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-[100]" role="dialog" aria-modal>
+        <div className="fixed inset-0 z-[100]" role="dialog" aria-modal aria-labelledby={title ? titleId : undefined}>
           <motion.div
+            ref={panel}
+            tabIndex={-1}
             className="absolute inset-0 bg-black/40"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -78,17 +104,17 @@ export function Sheet({ open, onClose, side = 'right', children, title }: SheetP
             )}
             {title && (
               <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-                <h2 className="font-serif text-xl font-semibold">{title}</h2>
+                <h2 id={titleId} className="font-serif text-xl font-semibold">{title}</h2>
                 <button
                   onClick={onClose}
-                  className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-black/5 transition-colors text-xl"
+                  className="size-11 rounded-full flex items-center justify-center hover:bg-black/5 transition-colors"
                   aria-label={t('common.close')}
                 >
-                  ×
+                  <X className="size-5" aria-hidden />
                 </button>
               </div>
             )}
-            <div className="flex-1 overflow-y-auto">{children}</div>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]">{children}</div>
           </motion.div>
         </div>
       )}

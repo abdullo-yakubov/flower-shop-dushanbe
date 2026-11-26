@@ -129,7 +129,7 @@ export function ShareButton({ title, text, url, className = '' }: Props) {
     <div className={`relative ${className}`}>
       <button
         onClick={handleTrigger}
-        className="flex items-center gap-2 text-sm text-muted hover:text-ink transition-colors"
+        className="min-h-11 flex items-center gap-2 text-sm text-muted hover:text-ink transition-colors"
         aria-label={t('share.title')}
       >
         <svg
@@ -170,7 +170,7 @@ export function ShareButton({ title, text, url, className = '' }: Props) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 16, scale: 0.97 }}
               transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-              className="fixed bottom-0 left-0 right-0 z-50 sm:absolute sm:bottom-auto sm:top-8 sm:right-0 sm:left-auto sm:w-72"
+              className="fixed bottom-0 left-0 right-0 z-50 sm:absolute sm:bottom-auto sm:top-12 sm:right-0 sm:left-auto sm:w-72"
             >
               <div className="bg-surface rounded-t-2xl sm:rounded-2xl shadow-xl border border-border overflow-hidden">
                 {/* Handle (mobile) */}
@@ -183,7 +183,7 @@ export function ShareButton({ title, text, url, className = '' }: Props) {
                   <p className="text-sm font-semibold text-ink">{t('share.title')}</p>
                   <button
                     onClick={() => setOpen(false)}
-                    className="w-7 h-7 rounded-full hover:bg-cream flex items-center justify-center text-muted hover:text-ink transition-colors"
+                    className="w-10 h-10 rounded-full hover:bg-cream flex items-center justify-center text-muted hover:text-ink transition-colors"
                   >
                     <svg
                       width="14"
@@ -237,7 +237,7 @@ export function ShareButton({ title, text, url, className = '' }: Props) {
                     <span className="text-xs text-muted truncate flex-1">{shareUrl}</span>
                     <button
                       onClick={handleCopy}
-                      className={`shrink-0 text-xs font-semibold transition-colors ${copied ? 'text-green-deep' : 'text-green-deep hover:text-green-light'}`}
+                      className={`shrink-0 min-h-9 px-1 text-xs font-semibold transition-colors ${copied ? 'text-green-deep' : 'text-green-deep hover:text-green-light'}`}
                     >
                       {copied ? t('share.copied') : t('share.copy')}
                     </button>
