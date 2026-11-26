@@ -1,0 +1,17 @@
+.env
+.env.*
+!.env.example
+**/node_modules/
+**/dist/
+**/bin/
+**/obj/
+**/logs/
+**/uploads/
+**/appsettings.Development.json
+**/*.local
+*.log
+.claude/
+.codex/
+.agents/
+**/*.tsbuildinfo
+**/modal_after.png

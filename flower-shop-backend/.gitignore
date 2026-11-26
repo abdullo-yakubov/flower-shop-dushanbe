@@ -1,0 +1,30 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.userprefs
+launchSettings.json
+
+# Environment secrets
+.env
+appsettings.Development.json
+
+# Uploads
+uploads/
+
+# Logs
+logs/
+*.log
+
+# Build artifacts
+publish/
+
+# NuGet
+*.nupkg
+.nuget/
+
+# OS
+.DS_Store
+Thumbs.db
