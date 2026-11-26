@@ -2,6 +2,7 @@
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using FlowerShop.Infrastructure.Services;
+using FlowerShop.Application.DTOs.Common;
 using FlowerShop.Application.Validators;
 using FlowerShop.API.Middleware;
 using FlowerShop.Infrastructure.Persistence;
@@ -33,9 +34,6 @@ builder.Services.AddScoped<LoyaltyService>();
 builder.Services.AddScoped<PricingService>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<ProductRepository>();
-builder.Services.AddScoped<UserRepository>();
-builder.Services.AddScoped<OrderRepository>();
-builder.Services.AddScoped<UnitOfWork>();
 
 builder.Services.AddSingleton<IFileStorageService>(sp =>
 {
@@ -51,7 +49,10 @@ if (builder.Environment.IsDevelopment() || smsProvider.Equals("mock", StringComp
 else
     builder.Services.AddScoped<ISmsService, EskizSmsService>();
 
-var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()!;
+var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>() ?? new JwtSettings();
+if (jwtSettings.SecretKey.Length < 32)
+    throw new InvalidOperationException(
+        "Jwt:SecretKey must be at least 32 characters. Set JWT_SECRET_KEY in .env or Jwt:SecretKey in appsettings.Development.json.");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opt =>
     {
@@ -68,7 +69,21 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(opt =>
+    {
+        // Same envelope as AppException errors: { success:false, error:{ code, message, details[] } }
+        opt.InvalidModelStateResponseFactory = ctx =>
+        {
+            var details = ctx.ModelState
+                .Where(kv => kv.Value?.Errors.Count > 0)
+                .SelectMany(kv => kv.Value!.Errors.Select(e => new ApiErrorDetail(
+                    kv.Key, string.IsNullOrWhiteSpace(e.ErrorMessage) ? "Некорректное значение" : e.ErrorMessage)))
+                .ToList();
+            var message = details.FirstOrDefault()?.Message ?? "Проверьте введённые данные";
+            return new Microsoft.AspNetCore.Mvc.BadRequestObjectResult(ApiResponse<object>.Fail("VALIDATION_ERROR", message, details));
+        };
+    });
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<SendOtpValidator>();
 
@@ -99,10 +114,22 @@ builder.Services.AddCors(opt =>
         .AllowAnyHeader()
         .AllowAnyMethod()));
 
+// Limits are per client IP: a single shared window would let one client lock everyone out.
+static string ClientKey(HttpContext ctx) => ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 builder.Services.AddRateLimiter(opt =>
 {
-    opt.AddFixedWindowLimiter("otp", o => { o.PermitLimit = 5; o.Window = TimeSpan.FromHours(1); });
-    opt.AddFixedWindowLimiter("api", o => { o.PermitLimit = 100; o.Window = TimeSpan.FromMinutes(1); });
+    opt.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    opt.OnRejected = async (ctx, ct) =>
+    {
+        ctx.HttpContext.Response.ContentType = "application/json";
+        await ctx.HttpContext.Response.WriteAsJsonAsync(
+            ApiResponse<object>.Fail("RATE_LIMIT", "Слишком много запросов. Попробуйте позже."), ct);
+    };
+    opt.AddPolicy("otp", ctx => RateLimitPartition.GetFixedWindowLimiter(ClientKey(ctx),
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromHours(1) }));
+    opt.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
+        RateLimitPartition.GetFixedWindowLimiter(ClientKey(ctx),
+            _ => new FixedWindowRateLimiterOptions { PermitLimit = 100, Window = TimeSpan.FromMinutes(1) }));
 });
 
 builder.Services.AddMemoryCache();

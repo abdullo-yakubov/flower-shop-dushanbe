@@ -8,6 +8,7 @@ import { AnimatedNumber } from '@/shared/ui/AnimatedNumber'
 import { formatPrice, formatShort } from '@/shared/lib/format'
 import { toast } from '@/shared/ui/toast.store'
 import { cn } from '@/shared/lib/cn'
+import { FREE_DELIVERY_THRESHOLD, DELIVERY_PRICE_DEFAULT } from '@/shared/config/appConfig'
 
 export function CartPage() {
   const { t } = useTranslation()
@@ -29,8 +30,8 @@ export function CartPage() {
   const promoRef = useRef<HTMLDivElement>(null)
 
   const subtotal = items.reduce((s, i) => s + i.snapshotPrice * i.quantity, 0)
-  const discount = promoDiscount > 0 ? (subtotal * promoDiscount) / 100 : 0
-  const deliveryFee = subtotal >= 1500 ? 0 : 40
+  const discount = Math.round((subtotal * promoDiscount) / 100)
+  const deliveryFee = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_PRICE_DEFAULT
 
   const handleRemove = (id: string, name: string) => {
     removeItem(id)
@@ -44,7 +45,7 @@ export function CartPage() {
     const ok = await applyPromo(promoInput)
     setPromoLoading(false)
     if (ok) {
-      toast.success(t('cart.promo_success', { discount: promoDiscount || '' }))
+      toast.success(t('cart.promo_success', { discount: useCartStore.getState().promoDiscount }))
       setPromoInput('')
     } else {
       setPromoError(true)
@@ -276,9 +277,11 @@ export function CartPage() {
                 )}
               </div>
 
-              {subtotal < 1500 && deliveryFee > 0 && (
+              {subtotal < FREE_DELIVERY_THRESHOLD && deliveryFee > 0 && (
                 <p className="text-xs text-muted bg-cream rounded-lg px-3 py-2">
-                  {t('cart.free_delivery_hint', { rest: formatShort(1500 - subtotal) })}
+                  {t('cart.free_delivery_hint', {
+                    rest: formatShort(FREE_DELIVERY_THRESHOLD - subtotal),
+                  })}
                 </p>
               )}
             </div>

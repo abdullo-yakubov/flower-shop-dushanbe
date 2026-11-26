@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useProduct, useReviews } from '@/entities/product/queries'
 import type { Packaging, ProductSize } from '@/entities/product/types'
-import { useCartStore } from '@/features/cart/store'
+import { useCartStore, unitPrice } from '@/features/cart/store'
 import { useFavoritesStore } from '@/features/favorites/store'
 import { useAuthStore } from '@/features/auth/store'
 import { useRecentlyViewedStore } from '@/features/recently-viewed/store'
@@ -20,7 +20,6 @@ import { toast } from '@/shared/ui/toast.store'
 import { usePageTitle } from '@/shared/hooks/usePageTitle'
 import { ProductCard } from '@/entities/product/ProductCard'
 import { MOCK_PRODUCTS } from '@/entities/product/mock'
-import { BASKET_SURCHARGE } from '@/shared/config/packagingConfig'
 
 function Accordion({ title, children }: { title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false)
@@ -158,10 +157,12 @@ export function ProductPage() {
     (p) => p.id !== product.id && p.occasions.some((o) => product.occasions.includes(o))
   ).slice(0, 4)
 
-  const currentPrice =
-    product.kind === 'single' && product.stemPrice
-      ? product.stemPrice * stemCount + (selectedPackaging === 'basket' ? BASKET_SURCHARGE : 0)
-      : size.price + (selectedPackaging === 'basket' ? BASKET_SURCHARGE : 0)
+  const currentPrice = unitPrice(
+    product,
+    size,
+    selectedPackaging,
+    product.kind === 'single' ? stemCount : undefined
+  )
 
   const handleAddToCart = () => {
     addItem(product, size, {

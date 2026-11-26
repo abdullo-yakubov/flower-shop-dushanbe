@@ -24,7 +24,7 @@ public class AuthService(AppDbContext db, ISmsService sms, IConfiguration config
             throw new AppException("RATE_LIMIT", "Превышен лимит отправок OTP");
 
         var isMock = config["Sms:Provider"]?.Equals("mock", StringComparison.OrdinalIgnoreCase) == true;
-        var code = isMock ? "123456" : Random.Shared.Next(100000, 999999).ToString();
+        var code = isMock ? "123456" : RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
         var otp = new OtpCode
         {
             Phone = phone,
@@ -99,6 +99,9 @@ public class AuthService(AppDbContext db, ISmsService sms, IConfiguration config
 
         token.IsRevoked = true;
         await db.SaveChangesAsync(ct);
+
+        if (token.User.IsBlocked)
+            throw new AppException("FORBIDDEN", "Аккаунт заблокирован");
 
         return await CreateAuthResponseAsync(token.User, deviceInfo, ip, ct);
     }

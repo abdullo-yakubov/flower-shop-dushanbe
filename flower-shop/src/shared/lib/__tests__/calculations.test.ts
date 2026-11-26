@@ -3,6 +3,9 @@ import { calcEarn, getTier, TIERS, MIN_REDEEM, MAX_REDEEM_PCT } from '@/features
 import { applyHolidayPrice } from '@/shared/lib/holiday'
 import { findPromo } from '@/shared/config/promotionConfig'
 import { pluralPoints } from '@/shared/lib/pluralize'
+import { unitPrice } from '@/features/cart/store'
+import { BASKET_SURCHARGE } from '@/shared/config/packagingConfig'
+import type { Product, ProductSize } from '@/entities/product/types'
 
 // ─── Loyalty: calcEarn ────────────────────────────────────────────────────────
 
@@ -62,14 +65,36 @@ describe('applyHolidayPrice', () => {
 describe('findPromo', () => {
   it('finds WELCOME20', () => expect(findPromo('WELCOME20')?.discountPct).toBe(20))
   it('finds FLOWER10', () => expect(findPromo('FLOWER10')?.discountPct).toBe(10))
-  it('finds SPRING20', () => expect(findPromo('SPRING20')?.discountPct).toBe(20))
+  it('finds SPRING20 inside its window', () =>
+    expect(findPromo('SPRING20', new Date('2025-03-15'))?.discountPct).toBe(20))
+  it('rejects SPRING20 after it expired', () =>
+    expect(findPromo('SPRING20', new Date('2025-05-01'))).toBeUndefined())
+  it('validTo is inclusive', () =>
+    expect(findPromo('SPRING20', new Date('2025-04-30T12:00:00Z'))).toBeDefined())
   it('finds WELCOME15', () => expect(findPromo('WELCOME15')?.discountPct).toBe(15))
-  it('is case-insensitive', () => expect(findPromo('welcome20')?.code).toBe('WELCOME20'))
+  it('is case-insensitive and trims', () =>
+    expect(findPromo(' welcome20 ')?.code).toBe('WELCOME20'))
   it('returns undefined for unknown code', () => expect(findPromo('BADCODE')).toBeUndefined())
-  it('all 4 codes exist', () => {
+  it('all 4 codes exist in their validity window', () => {
     const codes = ['WELCOME20', 'WELCOME15', 'FLOWER10', 'SPRING20']
-    codes.forEach((c) => expect(findPromo(c)).toBeDefined())
+    codes.forEach((c) => expect(findPromo(c, new Date('2025-03-15'))).toBeDefined())
   })
+})
+
+// ─── Cart: unit price (mirrors backend PricingService) ────────────────────────
+
+describe('unitPrice', () => {
+  const size = { id: 's', label: 'M', price: 600 } as ProductSize
+  const bouquet = { id: 'p', stemPrice: undefined } as unknown as Product
+  const tulips = { id: 't', stemPrice: 12 } as unknown as Product
+
+  it('uses size price for bouquets', () => expect(unitPrice(bouquet, size, 'no_basket')).toBe(600))
+  it('adds basket surcharge', () =>
+    expect(unitPrice(bouquet, size, 'basket')).toBe(600 + BASKET_SURCHARGE))
+  it('prices single stems per stem', () =>
+    expect(unitPrice(tulips, size, 'no_basket', 25)).toBe(300))
+  it('stems + basket', () =>
+    expect(unitPrice(tulips, size, 'basket', 11)).toBe(132 + BASKET_SURCHARGE))
 })
 
 // ─── Promo: cart discount formula ─────────────────────────────────────────────

@@ -9,9 +9,9 @@ import { useCartStore, type CartItem } from './store'
 import { formatShort, formatPrice } from '@/shared/lib/format'
 import { toast } from '@/shared/ui/toast.store'
 import { cn } from '@/shared/lib/cn'
-import { BASKET_SURCHARGE } from '@/shared/config/packagingConfig'
+import { FREE_DELIVERY_THRESHOLD } from '@/shared/config/appConfig'
 
-const FREE_DELIVERY = 1500
+const FREE_DELIVERY = FREE_DELIVERY_THRESHOLD
 
 // One-shot petal burst — 8 petals flying outward
 function PetalBurst() {
@@ -47,12 +47,7 @@ function PetalBurst() {
 }
 
 function itemPrice(item: CartItem): number {
-  if (item.stemCount != null && item.product.stemPrice) {
-    return (
-      item.product.stemPrice * item.stemCount + (item.packaging === 'basket' ? BASKET_SURCHARGE : 0)
-    )
-  }
-  return item.size.price + (item.packaging === 'basket' ? BASKET_SURCHARGE : 0)
+  return item.snapshotPrice
 }
 
 export function CartDrawer() {
@@ -106,7 +101,7 @@ export function CartDrawer() {
     const ok = await applyPromo(promoInput)
     setPromoLoading(false)
     if (ok) {
-      toast.success(t('cart.promo_success', { discount: promoDiscount || '' }))
+      toast.success(t('cart.promo_success', { discount: useCartStore.getState().promoDiscount }))
       setPromoInput('')
     } else {
       setPromoError(true)

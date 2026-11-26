@@ -48,6 +48,13 @@ export const PROMOTIONS: Promotion[] = [
   },
 ]
 
-export function findPromo(code: string): Promotion | undefined {
-  return PROMOTIONS.find((p) => p.code === code.toUpperCase())
+/** Offline/demo lookup. Returns only promotions active on `now` (validTo is inclusive). */
+export function findPromo(code: string, now: Date = new Date()): Promotion | undefined {
+  const today = now.toISOString().slice(0, 10)
+  return PROMOTIONS.find(
+    (p) =>
+      p.code === code.trim().toUpperCase() &&
+      p.validFrom <= today &&
+      (p.validTo === null || today <= p.validTo)
+  )
 }

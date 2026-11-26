@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { Logo } from '@/shared/ui/Logo'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCartStore } from '@/features/cart/store'
 import { useCartFlyStore } from '@/features/cart/flyStore'
@@ -81,9 +82,10 @@ export function Header() {
         {/* Logo */}
         <Link
           to="/"
-          className="shrink-0 font-serif text-xl font-semibold text-green-deep tracking-tight"
+          aria-label={t('header.logo')}
+          className="shrink-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-deep/40"
         >
-          {t('header.logo')}
+          <Logo compact />
         </Link>
 
         {/* Desktop search */}

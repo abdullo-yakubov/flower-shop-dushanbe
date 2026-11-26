@@ -208,6 +208,7 @@ export const en: Translation = {
     cash: 'Cash',
   },
   checkout: {
+    order_error: 'Could not place the order. Check your connection and try again.',
     title: 'Checkout',
     recipient: 'Recipient',
     for_me: 'For myself',

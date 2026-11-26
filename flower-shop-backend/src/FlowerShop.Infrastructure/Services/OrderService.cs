@@ -1,5 +1,6 @@
 using System.Text.Json;
 using FlowerShop.Application.DTOs.Orders;
+using FlowerShop.Domain.Constants;
 using FlowerShop.Domain.Entities;
 using FlowerShop.Domain.Enums;
 using FlowerShop.Infrastructure.Persistence;
@@ -9,136 +10,146 @@ namespace FlowerShop.Infrastructure.Services;
 
 public class OrderService(AppDbContext db, LoyaltyService loyalty, PricingService pricing)
 {
+    /// <summary>Arbitrary constant key for pg_advisory_xact_lock — serializes order numbering.</summary>
+    private const long OrderNumberLockKey = 0x464C_5752_0001;
+
+    public async Task<OrderQuoteResponse> QuoteAsync(Guid userId, QuoteOrderRequest req, CancellationToken ct)
+    {
+        var quote = await pricing.QuoteAsync(userId, new OrderPricingInput(
+            req.Items, req.Addons, req.DeliveryZoneId, DateOnly.Parse(req.DeliveryDate), req.PromoCode, req.RedeemPoints), ct);
+
+        return new OrderQuoteResponse(quote.ItemsSubtotal, quote.AddonsTotal, quote.DeliveryFee, quote.PromoDiscount,
+            quote.PointsDiscount, quote.Total, quote.EarnPoints, quote.HolidayName);
+    }
+
     public async Task<CreateOrderResponse> CreateOrderAsync(Guid userId, CreateOrderRequest req, CancellationToken ct)
     {
         var user = await db.Users.FindAsync([userId], ct)
             ?? throw new AppException("NOT_FOUND", "Пользователь не найден");
+        if (user.IsBlocked)
+            throw new AppException("FORBIDDEN", "Аккаунт заблокирован");
 
-        var items = new List<(ProductSize size, Product product, int quantity, string packaging, int? stemCount)>();
-        foreach (var ri in req.Items)
-        {
-            var size = await db.ProductSizes
-                .Include(s => s.Product).ThenInclude(p => p.Images)
-                .FirstOrDefaultAsync(s => s.Id == ri.SizeId, ct)
-                ?? throw new AppException("NOT_FOUND", $"Размер {ri.SizeId} не найден");
-            if (!size.Product.InStock)
-                throw new AppException("OUT_OF_STOCK", $"Товар {size.Product.NameRu} закончился");
-            items.Add((size, size.Product, ri.Quantity, ri.Packaging, ri.StemCount));
-        }
+        if (req.PostcardId.HasValue && !await db.Postcards.AnyAsync(p => p.Id == req.PostcardId && p.IsActive, ct))
+            throw new AppException("VALIDATION_ERROR", "Открытка не найдена");
 
         var deliveryDate = DateOnly.Parse(req.DeliveryDate);
-        var (subtotalItems, deliveryFee, promoDiscount, pointsDiscount, total) =
-            await pricing.CalculateAsync(items, req.DeliveryZoneId, deliveryDate, req.PromoCode, req.RedeemPoints, userId, ct);
+        var deliveryTime = OrderConstants.NormalizeTimeSlot(req.DeliveryTime)
+            ?? throw new AppException("VALIDATION_ERROR", "Недопустимый временной слот");
 
-        int orderCount = await db.Orders.CountAsync(ct);
-        var orderNumber = $"#{orderCount + 1:D6}";
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await db.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock({0})", [OrderNumberLockKey], ct);
 
+        // Priced inside the transaction so promo limits and the points balance can't change underneath us.
+        var quote = await pricing.QuoteAsync(userId, new OrderPricingInput(
+            req.Items, req.Addons, req.DeliveryZoneId, deliveryDate, req.PromoCode, req.RedeemPoints), ct);
+
+        var now = DateTimeOffset.UtcNow;
         var order = new Order
         {
             Id = Guid.NewGuid(),
-            OrderNumber = orderNumber,
+            OrderNumber = await NextOrderNumberAsync(ct),
             UserId = userId,
             Status = OrderStatus.Accepted,
-            Subtotal = subtotalItems,
-            DeliveryFee = deliveryFee,
-            PromoDiscount = promoDiscount,
-            PointsDiscount = pointsDiscount,
-            Total = total,
-            Address = req.Address,
+            Subtotal = quote.Subtotal,
+            DeliveryFee = quote.DeliveryFee,
+            PromoDiscount = quote.PromoDiscount,
+            PointsDiscount = quote.PointsDiscount,
+            Total = quote.Total,
+            Address = req.Address.Trim(),
             DeliveryZoneId = req.DeliveryZoneId,
             DeliveryDate = deliveryDate,
-            DeliveryTime = req.DeliveryTime,
-            PaymentMethod = Enum.Parse<PaymentMethod>(req.PaymentMethod, true),
-            CustomerName = req.CustomerName,
+            DeliveryTime = deliveryTime,
+            PaymentMethod = Enum.Parse<PaymentMethod>(req.PaymentMethod, ignoreCase: true),
+            CustomerName = req.CustomerName.Trim(),
             CustomerPhone = req.CustomerPhone,
             IsGift = req.IsGift,
-            RecipientName = req.RecipientName,
-            RecipientPhone = req.RecipientPhone,
+            RecipientName = req.IsGift ? req.RecipientName?.Trim() : null,
+            RecipientPhone = req.IsGift ? req.RecipientPhone : null,
             IsAnonymous = req.IsAnonymous,
             PostcardId = req.PostcardId,
-            CardText = req.CardText,
-            PromoCode = req.PromoCode,
+            CardText = string.IsNullOrWhiteSpace(req.CardText) ? null : req.CardText.Trim(),
+            PromoCode = quote.Promo?.Code,
             IsCancellable = true,
-            CreatedAt = DateTimeOffset.UtcNow,
-            UpdatedAt = DateTimeOffset.UtcNow
+            CreatedAt = now,
+            UpdatedAt = now
         };
         db.Orders.Add(order);
 
-        foreach (var (size, product, qty, packaging, stemCount) in items)
+        foreach (var item in quote.Items)
         {
-            var snapshot = JsonSerializer.SerializeToDocument(new { name = product.NameRu, image_url = product.Images.FirstOrDefault()?.Url, slug = product.Slug });
             db.OrderItems.Add(new OrderItem
             {
                 OrderId = order.Id,
-                ProductId = product.Id,
-                ProductSnapshot = snapshot,
-                SizeLabel = size.Label.ToString(),
-                Quantity = qty,
-                UnitPrice = size.Price,
-                StemCount = stemCount,
-                Packaging = packaging
+                ProductId = item.Product.Id,
+                ProductSnapshot = JsonSerializer.SerializeToDocument(new
+                {
+                    name = item.Product.NameRu,
+                    image_url = item.Product.Images.OrderBy(i => i.SortOrder).FirstOrDefault()?.Url,
+                    slug = item.Product.Slug,
+                    unit_price = item.UnitPrice
+                }),
+                SizeLabel = item.Size.Label.ToString(),
+                Quantity = item.Quantity,
+                UnitPrice = item.UnitPrice,
+                StemCount = item.StemCount,
+                Packaging = item.PackagingCode
             });
         }
 
-        if (req.Addons is not null)
+        foreach (var addon in quote.Addons)
         {
-            foreach (var ra in req.Addons)
+            db.OrderAddons.Add(new OrderAddon
             {
-                var addon = await db.Addons.FindAsync([ra.AddonId], ct)
-                    ?? throw new AppException("NOT_FOUND", $"Аддон {ra.AddonId} не найден");
-                var snap = JsonSerializer.SerializeToDocument(new { name = addon.NameRu, price = addon.Price });
-                db.OrderAddons.Add(new OrderAddon
-                {
-                    OrderId = order.Id,
-                    AddonId = addon.Id,
-                    AddonSnapshot = snap,
-                    Quantity = ra.Quantity,
-                    UnitPrice = addon.Price,
-                    Inscription = ra.Inscription
-                });
-            }
+                OrderId = order.Id,
+                AddonId = addon.Addon.Id,
+                AddonSnapshot = JsonSerializer.SerializeToDocument(new { name = addon.Addon.NameRu, price = addon.Addon.Price }),
+                Quantity = addon.Quantity,
+                UnitPrice = addon.Addon.Price,
+                Inscription = addon.Inscription
+            });
         }
 
         db.OrderStatusHistories.Add(new OrderStatusHistory
         {
             OrderId = order.Id,
             ToStatus = OrderStatus.Accepted,
-            CreatedAt = DateTimeOffset.UtcNow
+            CreatedAt = now
         });
 
-        if (req.PromoCode is not null)
-        {
-            var promo = await db.PromoCodes.FirstOrDefaultAsync(p => p.Code == req.PromoCode.ToUpper(), ct);
-            if (promo is not null) promo.UsedCount++;
-        }
+        if (quote.Promo is not null)
+            quote.Promo.UsedCount++;
 
-        if (req.RedeemPoints > 0)
-            await loyalty.RedeemPointsAsync(userId, req.RedeemPoints, order.Id, ct);
+        await loyalty.RedeemPointsAsync(userId, quote.PointsDiscount, order, ct);
+        var earned = await loyalty.EarnPointsAsync(userId, quote.Total, order, ct);
 
         user.TotalOrders++;
-        user.TotalSpent += total;
-        user.UpdatedAt = DateTimeOffset.UtcNow;
+        user.TotalSpent += quote.Total;
+        user.UpdatedAt = now;
 
         await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
 
-        var earned = await loyalty.EarnPointsAsync(userId, total, order.Id, ct);
-        await db.SaveChangesAsync(ct);
-
-        return new CreateOrderResponse(order.Id, orderNumber, total, earned, "accepted");
+        return new CreateOrderResponse(order.Id, order.OrderNumber, order.Total, earned, order.Status.ToApiString());
     }
 
     public async Task CancelOrderAsync(Guid orderId, Guid userId, string? reason, CancellationToken ct)
     {
-        var order = await db.Orders.FindAsync([orderId], ct)
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+
+        var order = await db.Orders.FirstOrDefaultAsync(o => o.Id == orderId, ct)
             ?? throw new AppException("NOT_FOUND", "Заказ не найден");
         if (order.UserId != userId)
             throw new AppException("FORBIDDEN", "Нет доступа к заказу");
         if (!order.IsCancellable || order.Status != OrderStatus.Accepted)
-            throw new AppException("CONFLICT", "Заказ нельзя отменить");
+            throw new AppException("CONFLICT", "Заказ уже передан в работу и не может быть отменён");
+
+        var now = DateTimeOffset.UtcNow;
+        var note = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim()[..Math.Min(reason.Trim().Length, 255)];
 
         order.Status = OrderStatus.Cancelled;
-        order.CancelReason = reason;
-        order.UpdatedAt = DateTimeOffset.UtcNow;
+        order.IsCancellable = false;
+        order.CancelReason = note;
+        order.UpdatedAt = now;
 
         db.OrderStatusHistories.Add(new OrderStatusHistory
         {
@@ -146,10 +157,40 @@ public class OrderService(AppDbContext db, LoyaltyService loyalty, PricingServic
             FromStatus = OrderStatus.Accepted,
             ToStatus = OrderStatus.Cancelled,
             ChangedBy = userId,
-            Note = reason,
-            CreatedAt = DateTimeOffset.UtcNow
+            Note = note,
+            CreatedAt = now
         });
 
+        await loyalty.RevertOrderAsync(userId, order, ct);
+
+        if (order.PromoCode is not null)
+        {
+            var promo = await db.PromoCodes.FirstOrDefaultAsync(p => p.Code == order.PromoCode, ct);
+            if (promo is { UsedCount: > 0 }) promo.UsedCount--;
+        }
+
+        var user = await db.Users.FindAsync([userId], ct);
+        if (user is not null)
+        {
+            user.TotalOrders = Math.Max(0, user.TotalOrders - 1);
+            user.TotalSpent = Math.Max(0, user.TotalSpent - order.Total);
+            user.UpdatedAt = now;
+        }
+
         await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+    }
+
+    /// <summary>Must be called while holding the advisory lock. Numbers look like "#000123".</summary>
+    private async Task<string> NextOrderNumberAsync(CancellationToken ct)
+    {
+        var last = await db.Orders
+            .Where(o => o.OrderNumber.StartsWith(OrderConstants.NumberPrefix))
+            .OrderByDescending(o => o.OrderNumber.Length).ThenByDescending(o => o.OrderNumber)
+            .Select(o => o.OrderNumber)
+            .FirstOrDefaultAsync(ct);
+
+        var lastValue = last is not null && int.TryParse(last[OrderConstants.NumberPrefix.Length..], out var n) ? n : 0;
+        return $"{OrderConstants.NumberPrefix}{lastValue + 1:D6}";
     }
 }

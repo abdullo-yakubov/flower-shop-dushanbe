@@ -38,7 +38,7 @@ public class LoyaltyController(AppDbContext db) : ControllerBase
         var history = account?.Transactions
             .OrderByDescending(t => t.CreatedAt)
             .Take(20)
-            .Select(t => new LoyaltyTransactionDto(t.Id, t.Type.ToString().ToLower(), t.Amount, t.BalanceAfter, t.Description, t.CreatedAt))
+            .Select(t => new LoyaltyTransactionDto(t.Id, t.Type.ToApiString(), t.Amount, t.BalanceAfter, t.Description, t.CreatedAt))
             ?? [];
 
         var dto = new LoyaltyDto(points, totalEarned, tier.ToString().ToLower(), tierLabel,

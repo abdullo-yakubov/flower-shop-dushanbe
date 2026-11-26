@@ -1,1 +1,1 @@
-npx lint-staged
+cd flower-shop && npx lint-staged

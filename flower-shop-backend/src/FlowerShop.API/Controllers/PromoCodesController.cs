@@ -1,35 +1,26 @@
 using FlowerShop.Application.DTOs.Common;
 using FlowerShop.Application.DTOs.Orders;
-using FlowerShop.Infrastructure.Persistence;
+using FlowerShop.Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace FlowerShop.API.Controllers;
 
 [ApiController]
 [Route("api/v1/promo-codes")]
-public class PromoCodesController(AppDbContext db) : ControllerBase
+public class PromoCodesController(PricingService pricing) : ControllerBase
 {
+    /// <summary>Same rules as order pricing: dates, usage limit, minimum order amount.</summary>
     [HttpPost("validate")]
     public async Task<IActionResult> Validate([FromBody] PromoValidateRequest req, CancellationToken ct)
     {
-        var promo = await db.PromoCodes.FirstOrDefaultAsync(p =>
-            p.Code == req.Code.ToUpper() && p.IsActive &&
-            p.ValidFrom <= DateTimeOffset.UtcNow &&
-            (p.ValidTo == null || p.ValidTo >= DateTimeOffset.UtcNow) &&
-            (p.MaxUses == null || p.UsedCount < p.MaxUses), ct);
+        if (string.IsNullOrWhiteSpace(req.Code))
+            return BadRequest(ApiResponse<object>.Fail("PROMO_INVALID", "Введите промокод"));
 
-        if (promo is null)
-            return BadRequest(ApiResponse<object>.Fail("PROMO_INVALID", "Промокод не найден или недействителен"));
-
-        if (req.OrderTotal < promo.MinOrder)
-            return BadRequest(ApiResponse<object>.Fail("PROMO_MIN_ORDER", $"Минимальная сумма заказа: {promo.MinOrder} с"));
-
-        var discountAmount = promo.DiscountPercent > 0
-            ? (int)Math.Round(req.OrderTotal * promo.DiscountPercent / 100.0)
-            : promo.DiscountFixed;
+        var orderTotal = Math.Max(0, req.OrderTotal);
+        var promo = await pricing.FindValidPromoAsync(req.Code, orderTotal, ct);
+        var discount = PricingService.CalculatePromoDiscount(promo, orderTotal);
 
         return Ok(ApiResponse<PromoValidateResponse>.Ok(new PromoValidateResponse(
-            promo.Code, promo.DiscountPercent, promo.DiscountFixed, discountAmount, promo.LabelRu)));
+            promo.Code, promo.DiscountPercent, promo.DiscountFixed, discount, promo.LabelRu)));
     }
 }

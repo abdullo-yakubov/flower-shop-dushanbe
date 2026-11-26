@@ -2,12 +2,15 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Product, ProductSize, Packaging } from '@/entities/product/types'
 import { findPromo } from '@/shared/config/promotionConfig'
+import { BASKET_SURCHARGE } from '@/shared/config/packagingConfig'
+import { API_ENABLED } from '@/shared/lib/api/client'
+import { apiValidatePromo } from '@/shared/lib/api/misc'
 
 export interface CartItem {
   id: string
   product: Product
   size: ProductSize
-  /** Price at the time the item was added — prevents holiday-surcharge drift */
+  /** Unit price at the time the item was added (incl. basket surcharge). The server re-prices on checkout. */
   snapshotPrice: number
   quantity: number
   packaging: Packaging
@@ -28,12 +31,26 @@ interface CartStore {
   openCart: () => void
   closeCart: () => void
   toggleCart: () => void
+  /** Items subtotal before promo */
+  subtotal: () => number
+  /** Items subtotal after promo */
   total: () => number
   count: () => number
   promoCode: string
   promoDiscount: number
   applyPromo: (code: string) => Promise<boolean>
   clearPromo: () => void
+}
+
+/** Unit price for a cart line — must match PricingService on the backend (holiday markup aside). */
+export function unitPrice(
+  product: Product,
+  size: ProductSize,
+  packaging: Packaging,
+  stemCount?: number
+): number {
+  const base = stemCount != null && product.stemPrice ? product.stemPrice * stemCount : size.price
+  return base + (packaging === 'basket' ? BASKET_SURCHARGE : 0)
 }
 
 export const useCartStore = create<CartStore>()(
@@ -47,9 +64,7 @@ export const useCartStore = create<CartStore>()(
       addItem: (product, size, opts = {}) => {
         const packaging = opts.packaging ?? 'no_basket'
         const stemCount = opts.stemCount
-        const snapshotPrice =
-          opts.snapshotPrice ??
-          (stemCount != null && product.stemPrice ? product.stemPrice * stemCount : size.price)
+        const snapshotPrice = opts.snapshotPrice ?? unitPrice(product, size, packaging, stemCount)
         const key =
           stemCount != null
             ? `${product.id}-stem${stemCount}-${packaging}`
@@ -88,41 +103,52 @@ export const useCartStore = create<CartStore>()(
       closeCart: () => set({ isOpen: false }),
       toggleCart: () => set((s) => ({ isOpen: !s.isOpen })),
 
+      subtotal: () => get().items.reduce((s, i) => s + i.snapshotPrice * i.quantity, 0),
+
       total: () => {
-        const { items, promoDiscount } = get()
-        const subtotal = items.reduce((s, i) => s + i.snapshotPrice * i.quantity, 0)
-        return promoDiscount ? Math.round(subtotal * (1 - promoDiscount / 100)) : subtotal
+        const subtotal = get().subtotal()
+        const { promoDiscount } = get()
+        return subtotal - Math.round((subtotal * promoDiscount) / 100)
       },
 
       count: () => get().items.reduce((s, i) => s + i.quantity, 0),
 
       applyPromo: async (code) => {
-        await new Promise((r) => setTimeout(r, 600))
-        const promo = findPromo(code)
-        if (promo) {
-          set({ promoCode: promo.code, promoDiscount: promo.discountPct })
-          return true
+        const subtotal = get().subtotal()
+        if (API_ENABLED) {
+          try {
+            const res = await apiValidatePromo(code.trim(), subtotal)
+            if (res.discountPercent <= 0) return false
+            set({ promoCode: res.code, promoDiscount: res.discountPercent })
+            return true
+          } catch {
+            return false
+          }
         }
-        return false
+        await new Promise((r) => setTimeout(r, 400))
+        const promo = findPromo(code)
+        if (!promo || subtotal < promo.minOrder) return false
+        set({ promoCode: promo.code, promoDiscount: promo.discountPct })
+        return true
       },
 
       clearPromo: () => set({ promoCode: '', promoDiscount: 0 }),
     }),
     {
       name: 'flower-cart',
-      version: 1,
-      migrate: (state) => {
-        // v0→v1: CartItem gained snapshotPrice; backfill from size.price
+      version: 2,
+      // v0→v1: CartItem gained snapshotPrice. v1→v2: snapshotPrice now includes the basket surcharge.
+      // Both cases are handled by recomputing the unit price from the stored product/size.
+      migrate: (state, version) => {
         const s = state as CartStore
+        if (version >= 2) return s
         return {
           ...s,
           items: (s.items ?? []).map((item) => ({
             ...item,
-            snapshotPrice:
-              (item as CartItem).snapshotPrice ??
-              ((item as CartItem).stemCount != null && (item as CartItem).product?.stemPrice
-                ? (item as CartItem).product.stemPrice! * (item as CartItem).stemCount!
-                : ((item as CartItem).size?.price ?? 0)),
+            snapshotPrice: item.size
+              ? unitPrice(item.product, item.size, item.packaging ?? 'no_basket', item.stemCount)
+              : (item.snapshotPrice ?? 0),
           })),
         }
       },

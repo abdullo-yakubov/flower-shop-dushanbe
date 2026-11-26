@@ -89,6 +89,8 @@ interface OrdersStore {
   addOrder: (data: Omit<Order, 'id' | 'date' | 'status' | 'isCancellable'>) => string
   /** Override order id after server confirms it */
   confirmOrder: (tempId: string, serverId: string, serverNumber: string) => void
+  /** Drop an optimistic order that the server rejected */
+  discardOrder: (tempId: string) => void
   cancelOrder: (id: string, reason?: string) => Promise<void>
   /** Pull orders from backend and merge */
   syncFromServer: () => Promise<void>
@@ -128,6 +130,10 @@ export const useOrdersStore = create<OrdersStore>()(
             o.id === tempId ? { ...o, id: serverNumber || serverId, serverId } : o
           ),
         }))
+      },
+
+      discardOrder: (tempId) => {
+        set((s) => ({ orders: s.orders.filter((o) => o.id !== tempId) }))
       },
 
       cancelOrder: async (id, reason) => {

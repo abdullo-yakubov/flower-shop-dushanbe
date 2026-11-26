@@ -1,9 +1,10 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:base"],
+  "extends": ["config:recommended"],
   "timezone": "Asia/Dushanbe",
   "schedule": ["before 9am on Monday"],
   "labels": ["dependencies"],
+  "baseBranches": ["main"],
   "packageRules": [
     {
       "matchUpdateTypes": ["minor", "patch"],
@@ -25,7 +26,17 @@
     {
       "matchPackageNames": ["typescript", "typescript-eslint", "eslint", "@eslint/js"],
       "groupName": "TypeScript + ESLint"
+    },
+    {
+      "matchManagers": ["nuget"],
+      "matchPackagePrefixes": ["Microsoft.EntityFrameworkCore", "Npgsql"],
+      "groupName": "EF Core + Npgsql"
+    },
+    {
+      "matchManagers": ["nuget"],
+      "matchPackagePrefixes": ["SkiaSharp"],
+      "groupName": "SkiaSharp"
     }
   ],
-  "ignorePaths": ["node_modules", "dist"]
+  "ignorePaths": ["**/node_modules/**", "**/dist/**", "**/bin/**", "**/obj/**"]
 }

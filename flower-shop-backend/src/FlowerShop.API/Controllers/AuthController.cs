@@ -3,6 +3,7 @@ using FlowerShop.Infrastructure.Services;
 using FlowerShop.Application.DTOs.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 
 namespace FlowerShop.API.Controllers;
@@ -11,6 +12,7 @@ namespace FlowerShop.API.Controllers;
 [Route("api/v1/auth")]
 public class AuthController(AuthService authService) : ControllerBase
 {
+    [EnableRateLimiting("otp")]
     [HttpPost("send-otp")]
     public async Task<IActionResult> SendOtp([FromBody] SendOtpRequest req, CancellationToken ct)
     {
@@ -18,6 +20,7 @@ public class AuthController(AuthService authService) : ControllerBase
         return Ok(ApiResponse<SendOtpResponse>.Ok(result));
     }
 
+    [EnableRateLimiting("otp")]
     [HttpPost("verify-otp")]
     public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequest req, CancellationToken ct)
     {

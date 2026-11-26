@@ -18,14 +18,14 @@ import { Button } from '@/shared/ui/Button'
 import { Input } from '@/shared/ui/Input'
 import { formatPrice } from '@/shared/lib/format'
 import { useCheckoutResources, type CheckoutAddon } from './useCheckoutResources'
-import { API_ENABLED } from '@/shared/lib/api/client'
+import { API_ENABLED, extractError } from '@/shared/lib/api/client'
+import { DELIVERY_PRICE_DEFAULT, FREE_DELIVERY_THRESHOLD } from '@/shared/config/appConfig'
 import { apiCreateOrder } from '@/shared/lib/api/orders'
 import { toast } from '@/shared/ui/toast.store'
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
-const DELIVERY_FEE = 40
-const FREE_DELIVERY_THRESHOLD = 1500
+const DELIVERY_FEE = DELIVERY_PRICE_DEFAULT
 
 const PAYMENTS = [
   { id: 'dc', tKey: 'checkout.pay_dc', icon: '💳' },
@@ -50,7 +50,8 @@ function getDeliveryDates(t: TFunction) {
           : i === 1
             ? t('checkout.delivery_tomorrow')
             : `${t(`checkout.day_${d.getDay()}`)} ${d.getDate()}`,
-      value: d.toISOString().split('T')[0],
+      // Local calendar date — toISOString() is UTC and shifts "today" back a day before 05:00 in Dushanbe
+      value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
     }
   })
 }
@@ -168,7 +169,7 @@ export function CheckoutPage() {
   const { t, i18n } = useTranslation()
   usePageTitle(t('checkout.title'))
   const { items, total, promoDiscount, clearCart } = useCartStore()
-  const { addOrder, confirmOrder } = useOrdersStore()
+  const { addOrder, confirmOrder, discardOrder } = useOrdersStore()
   const {
     points: loyaltyBalance,
     earnPoints,
@@ -249,7 +250,9 @@ export function CheckoutPage() {
   }
 
   const onSubmit = async (data: FormData) => {
+    if (loading) return // guard against double submit
     setLoading(true)
+    let tempId: string | null = null
     try {
       const orderAddons: OrderAddon[] = ADDONS.filter((a) => (addonQtys[a.id] || 0) > 0).map(
         (a) => ({
@@ -262,7 +265,7 @@ export function CheckoutPage() {
       )
 
       // Create a local order optimistically for instant UI feedback
-      const tempId = addOrder({
+      tempId = addOrder({
         items: items.map((i) => ({
           productId: i.product.id,
           productName: i.product.name,
@@ -337,8 +340,14 @@ export function CheckoutPage() {
       setSuccess(true)
       clearCart()
     } catch (err) {
-      const msg = err instanceof Error ? err.message : t('checkout.order_error')
-      toast.error(msg)
+      // The server rejected the order — remove the optimistic copy so history stays truthful
+      if (tempId) discardOrder(tempId)
+      const apiError = extractError(err)
+      toast.error(
+        apiError.code === 'NETWORK_ERROR' || apiError.code === 'UNKNOWN'
+          ? t('checkout.order_error')
+          : apiError.message
+      )
     } finally {
       setLoading(false)
     }

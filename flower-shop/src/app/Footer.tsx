@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { Logo } from '@/shared/ui/Logo'
 
 export function Footer() {
   const { t } = useTranslation()
@@ -9,7 +10,7 @@ export function Footer() {
       <div className="max-w-[1280px] mx-auto px-4 md:px-6 py-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
         {/* Brand */}
         <div className="space-y-3">
-          <p className="font-serif text-xl font-semibold">{t('header.logo')}</p>
+          <Logo tone="inverse" />
           <p className="text-white/60 text-sm leading-relaxed">{t('footer.tagline')}</p>
           <div className="flex gap-3 pt-1">
             <a

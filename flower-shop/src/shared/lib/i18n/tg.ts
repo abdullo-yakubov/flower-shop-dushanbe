@@ -208,6 +208,7 @@ export const tg: Translation = {
     cash: 'Нақд',
   },
   checkout: {
+    order_error: 'Фармоиш қабул нашуд. Пайвастро санҷед ва бори дигар кӯшиш кунед.',
     title: 'Фармоиш додан',
     recipient: 'Гиранда',
     for_me: 'Барои худам',
