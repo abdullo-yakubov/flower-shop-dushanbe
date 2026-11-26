@@ -1,3 +1,4 @@
+import { LogoMark } from '@/shared/ui/Logo'
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 
 interface Props {
@@ -23,7 +24,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.error) {
       return (
         <div className="min-h-svh flex flex-col items-center justify-center gap-6 p-8 text-center bg-cream">
-          <p className="text-5xl">🌸</p>
+          <LogoMark className="size-14" />
           <div className="space-y-2">
             <h1 className="font-serif text-2xl font-semibold text-ink">Что-то пошло не так</h1>
             <p className="text-sm text-muted max-w-xs">

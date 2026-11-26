@@ -1,7 +1,7 @@
 import { apiClient } from './client'
 import type { Addon, Postcard, MessageTemplate } from '@/entities/product/types'
 
-// ── Addons ────────────────────────────────────────────────────────────────────
+// Addons
 
 interface ApiAddon {
   id: string
@@ -24,7 +24,7 @@ export async function apiGetAddons(): Promise<Addon[]> {
   }))
 }
 
-// ── Postcards ─────────────────────────────────────────────────────────────────
+// Postcards
 
 interface ApiPostcard {
   id: string
@@ -48,7 +48,7 @@ export async function apiGetPostcards(occasion?: string): Promise<Postcard[]> {
   }))
 }
 
-// ── Message templates ─────────────────────────────────────────────────────────
+// Message templates
 
 interface ApiTemplate {
   id: string
@@ -71,7 +71,7 @@ export async function apiGetMessageTemplates(category?: string): Promise<Message
   }))
 }
 
-// ── Delivery zones ────────────────────────────────────────────────────────────
+// Delivery zones
 
 export interface DeliveryZone {
   id: string
@@ -87,7 +87,7 @@ export async function apiGetDeliveryZones(): Promise<DeliveryZone[]> {
   return data.data
 }
 
-// ── Promo code ────────────────────────────────────────────────────────────────
+// Promo code
 
 export interface PromoResult {
   code: string
@@ -105,7 +105,7 @@ export async function apiValidatePromo(code: string, orderTotal: number): Promis
   return data.data
 }
 
-// ── Shop config ───────────────────────────────────────────────────────────────
+// Shop config
 
 export interface ShopConfig {
   shopName: string

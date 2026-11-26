@@ -1,3 +1,29 @@
+import {
+  Bike,
+  Camera,
+  ChevronDown,
+  CircleCheck,
+  ClipboardList,
+  Clock,
+  Coins,
+  Flower2,
+  Heart,
+  ImagePlus,
+  MapPin,
+  Package,
+  PackageCheck,
+  Pencil,
+  PenLine,
+  ShoppingBag,
+  Star,
+  Trash2,
+  TriangleAlert,
+  Trophy,
+  X,
+  type LucideIcon,
+} from 'lucide-react'
+import { EmptyIcon } from '@/shared/ui/EmptyIcon'
+import { LogoMark } from '@/shared/ui/Logo'
 import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -29,7 +55,7 @@ const TABS = [
 ] as const
 type Tab = (typeof TABS)[number]['id']
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// Helpers
 
 const PAYMENT_KEYS: Record<Order['payment'], string> = {
   dc: 'checkout.pay_dc',
@@ -64,13 +90,18 @@ const STATUS_STEPS: OrderStatus[] = [
   'Доставлен',
 ]
 
-const STEP_ICON: Record<OrderStatus, string> = {
-  Принят: '📝',
-  Собирается: '💐',
-  'Фото готово': '📸',
-  'Курьер в пути': '🚴',
-  Доставлен: '✅',
-  Отменён: '✕',
+const STEP_ICON: Record<OrderStatus, LucideIcon> = {
+  Принят: ClipboardList,
+  Собирается: Flower2,
+  'Фото готово': Camera,
+  'Курьер в пути': Bike,
+  Доставлен: PackageCheck,
+  Отменён: X,
+}
+
+function StepIcon({ step }: { step: OrderStatus }) {
+  const Icon = STEP_ICON[step]
+  return <Icon className="size-3.5" aria-hidden />
 }
 
 // Delivery slot strings look like "15:00–18:00" (see shared/config/deliveryConfig.ts)
@@ -88,7 +119,7 @@ function formatHistoryTime(iso: string) {
   return new Date(iso).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
 }
 
-// ─── Order status timeline ─────────────────────────────────────────────────────
+// Order status timeline
 
 function OrderTimeline({ order }: { order: Order }) {
   const { t } = useTranslation()
@@ -153,14 +184,17 @@ function OrderTimeline({ order }: { order: Order }) {
         <p
           className={`text-xs font-medium ${comparison.onTime ? 'text-green-deep' : 'text-muted'}`}
         >
-          {comparison.onTime ? '✅ ' : ''}
+          {comparison.onTime && (
+            <CircleCheck className="inline size-3.5 mr-1 -mt-0.5" aria-hidden />
+          )}
           {comparison.label}
         </p>
       )}
 
       {isRunningLate && (
         <div className="bg-gold/10 border border-gold/30 rounded-xl px-3 py-2 text-xs text-ink">
-          🚴 {t('account.order_timeline.courier_running_late')}
+          <Bike className="inline size-3.5 mr-1.5 -mt-0.5" aria-hidden />
+          {t('account.order_timeline.courier_running_late')}
         </div>
       )}
 
@@ -175,7 +209,7 @@ function OrderTimeline({ order }: { order: Order }) {
                   reached ? 'bg-green-deep text-white' : 'bg-border/50 text-muted'
                 }`}
               >
-                {STEP_ICON[step]}
+                <StepIcon step={step} />
               </span>
               <div className="flex-1 min-w-0 pt-0.5">
                 <p className={`text-sm font-medium ${reached ? 'text-ink' : 'text-muted'}`}>
@@ -213,7 +247,7 @@ function OrderTimeline({ order }: { order: Order }) {
   )
 }
 
-// ─── Photo upload hook ────────────────────────────────────────────────────────
+// Photo upload hook
 
 function usePhotoUpload(max = 5) {
   const [photos, setPhotos] = useState<string[]>([])
@@ -253,7 +287,7 @@ function usePhotoUpload(max = 5) {
   return { photos, pick, onFiles, remove, inputRef, canAdd: photos.length < max }
 }
 
-// ─── Review form ──────────────────────────────────────────────────────────────
+// Review form
 
 function ReviewForm({
   orderId,
@@ -312,9 +346,9 @@ function ReviewForm({
               onMouseEnter={() => setHover(star)}
               onMouseLeave={() => setHover(0)}
               onClick={() => setRating(star)}
-              className="text-2xl transition-transform hover:scale-110 active:scale-95"
+              className={`transition-transform hover:scale-110 active:scale-95 ${(hover || rating) >= star ? 'text-gold' : 'text-border'}`}
             >
-              <span className={(hover || rating) >= star ? 'text-gold' : 'text-border'}>★</span>
+              <Star className="size-7" fill="currentColor" strokeWidth={0} aria-hidden />
             </button>
           ))}
         </div>
@@ -343,9 +377,9 @@ function ReviewForm({
                 <button
                   type="button"
                   onClick={() => remove(i)}
-                  className="absolute inset-0 bg-ink/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-lg"
+                  className="absolute inset-0 bg-ink/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
                 >
-                  ×
+                  <X className="size-5" aria-hidden />
                 </button>
               </div>
             ))}
@@ -355,7 +389,7 @@ function ReviewForm({
                 onClick={pick}
                 className="w-16 h-16 rounded-lg border-2 border-dashed border-border hover:border-green-deep/60 flex flex-col items-center justify-center gap-0.5 text-muted hover:text-green-deep transition-all"
               >
-                <span className="text-xl leading-none">📷</span>
+                <ImagePlus className="size-5" aria-hidden />
                 <span className="text-[9px] font-medium">{t('account.photo')}</span>
               </button>
             )}
@@ -383,7 +417,7 @@ function ReviewForm({
   )
 }
 
-// ─── Cancel dialog ────────────────────────────────────────────────────────────
+// Cancel dialog
 
 function CancelDialog({ orderId, onClose }: { orderId: string; onClose: () => void }) {
   const { t } = useTranslation()
@@ -412,7 +446,7 @@ function CancelDialog({ orderId, onClose }: { orderId: string; onClose: () => vo
         onClick={(e) => e.stopPropagation()}
       >
         <div className="text-center">
-          <p className="text-4xl mb-3">⚠️</p>
+          <EmptyIcon icon={TriangleAlert} tone="rose" className="mb-3" />
           <h3 className="font-serif text-xl font-semibold text-ink">
             {t('account.cancel_confirm')}
           </h3>
@@ -435,7 +469,7 @@ function CancelDialog({ orderId, onClose }: { orderId: string; onClose: () => vo
   )
 }
 
-// ─── Order card ───────────────────────────────────────────────────────────────
+// Order card
 
 const ACTIVE_STATUSES: OrderStatus[] = ['Принят', 'Собирается', 'Фото готово', 'Курьер в пути']
 
@@ -484,7 +518,7 @@ function OrderCard({ order }: { order: Order }) {
           </div>
           <Badge variant={ORDER_STATUS_BADGE[order.status]}>{t(STATUS_KEYS[order.status])}</Badge>
           <motion.span animate={{ rotate: open ? 180 : 0 }} className="text-muted ml-1 shrink-0">
-            ▾
+            <ChevronDown className="size-4" aria-hidden />
           </motion.span>
         </button>
 
@@ -588,8 +622,14 @@ function OrderCard({ order }: { order: Order }) {
 
                 <div className="pt-3 border-t border-border space-y-1.5">
                   <div className="flex items-center justify-between text-xs text-muted">
-                    <span>🕐 {order.deliveryTime}</span>
-                    <span>📍 {order.address}</span>
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="size-3.5" aria-hidden />
+                      {order.deliveryTime}
+                    </span>
+                    <span className="inline-flex items-center gap-1 min-w-0">
+                      <MapPin className="size-3.5 shrink-0" aria-hidden />
+                      <span className="truncate">{order.address}</span>
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-xs text-muted">
                     <span>
@@ -630,7 +670,7 @@ function OrderCard({ order }: { order: Order }) {
   )
 }
 
-// ─── My reviews ───────────────────────────────────────────────────────────────
+// My reviews
 
 function MyReviews() {
   const { t } = useTranslation()
@@ -640,7 +680,7 @@ function MyReviews() {
   if (reviews.length === 0) {
     return (
       <div className="text-center py-16">
-        <p className="text-4xl mb-3">✍️</p>
+        <EmptyIcon icon={PenLine} className="mb-3" />
         <p className="font-serif text-xl mb-2">{t('account.no_reviews')}</p>
         <p className="text-sm text-muted">{t('account.no_reviews_hint')}</p>
       </div>
@@ -705,7 +745,7 @@ function MyReviews() {
   )
 }
 
-// ─── Loyalty tab ──────────────────────────────────────────────────────────────
+// Loyalty tab
 
 function LoyaltyTab() {
   const { t, i18n } = useTranslation()
@@ -733,7 +773,7 @@ function LoyaltyTab() {
             <p className="text-xs opacity-70 mt-1">{t('loyalty.point_rate')}</p>
           </div>
           <div className="text-right">
-            <span className="text-3xl">{tierInfo.emoji}</span>
+            <tierInfo.icon className="size-8 ml-auto" strokeWidth={1.5} aria-hidden />
             <p className="text-xs font-semibold opacity-90 mt-1">{tierLabel(tierInfo.tier)}</p>
           </div>
         </div>
@@ -771,16 +811,16 @@ function LoyaltyTab() {
         <h3 className="text-sm font-semibold text-ink">{t('loyalty.how_it_works')}</h3>
         <div className="space-y-3">
           {[
-            { icon: '🛍', title: t('loyalty.earn'), desc: t('loyalty.earn_desc') },
+            { icon: ShoppingBag, title: t('loyalty.earn'), desc: t('loyalty.earn_desc') },
             {
-              icon: '💸',
+              icon: Coins,
               title: t('loyalty.spend'),
               desc: t('loyalty.spend_desc', { min: MIN_REDEEM }),
             },
-            { icon: '🥇', title: t('loyalty.level_up'), desc: t('loyalty.level_up_desc') },
+            { icon: Trophy, title: t('loyalty.level_up'), desc: t('loyalty.level_up_desc') },
           ].map((item) => (
-            <div key={item.icon} className="flex items-start gap-3">
-              <span className="text-xl mt-0.5">{item.icon}</span>
+            <div key={item.title} className="flex items-start gap-3">
+              <item.icon className="size-5 mt-0.5 shrink-0 text-green-deep" aria-hidden />
               <div>
                 <p className="text-sm font-medium text-ink">{item.title}</p>
                 <p className="text-xs text-muted">{item.desc}</p>
@@ -819,7 +859,7 @@ function LoyaltyTab() {
 
       {history.length === 0 && (
         <div className="text-center py-8">
-          <p className="text-4xl mb-3">⭐</p>
+          <EmptyIcon icon={Star} className="mb-3" />
           <p className="text-sm text-muted">{t('loyalty.no_history')}</p>
           <Link to="/" className="mt-4 inline-block">
             <Button size="sm">{t('loyalty.choose_bouquet')}</Button>
@@ -830,7 +870,7 @@ function LoyaltyTab() {
   )
 }
 
-// ─── Profile edit ─────────────────────────────────────────────────────────────
+// Profile edit
 
 function ProfileEdit({ user }: { user: import('@/features/auth/store').User }) {
   const { t } = useTranslation()
@@ -882,7 +922,7 @@ function ProfileEdit({ user }: { user: import('@/features/auth/store').User }) {
             <span className="text-white text-2xl font-bold">{user.name[0]}</span>
           )}
           <div className="absolute inset-0 bg-ink/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-            <span className="text-white text-xs font-medium">📷</span>
+            <Camera className="size-5 text-white" aria-hidden />
           </div>
         </button>
         <input
@@ -928,7 +968,7 @@ function ProfileEdit({ user }: { user: import('@/features/auth/store').User }) {
                 setName(user.name)
               }}
             >
-              ✕
+              <X className="size-4" aria-hidden />
             </Button>
           </div>
         ) : (
@@ -995,7 +1035,7 @@ function ProfileEdit({ user }: { user: import('@/features/auth/store').User }) {
   )
 }
 
-// ─── Addresses tab ───────────────────────────────────────────────────────────
+// Addresses tab
 
 interface AddressFields {
   label: string
@@ -1104,7 +1144,7 @@ function AddressesTab() {
     <div className="space-y-4 max-w-lg">
       {addresses.length === 0 && !adding && (
         <div className="text-center py-16">
-          <p className="text-4xl mb-3">📍</p>
+          <EmptyIcon icon={MapPin} className="mb-3" />
           <p className="font-serif text-xl text-ink mb-1">{t('addresses.empty')}</p>
           <p className="text-sm text-muted mb-5">{t('addresses.empty_hint')}</p>
         </div>
@@ -1149,13 +1189,13 @@ function AddressesTab() {
                       onClick={() => setEditing(addr.id)}
                       className="text-xs text-muted hover:text-green-deep transition-colors p-1"
                     >
-                      ✏️
+                      <Pencil className="size-4" aria-hidden />
                     </button>
                     <button
                       onClick={() => handleRemove(addr.id)}
                       className="text-xs text-muted hover:text-error transition-colors p-1"
                     >
-                      🗑️
+                      <Trash2 className="size-4" aria-hidden />
                     </button>
                   </div>
                 </div>
@@ -1195,7 +1235,7 @@ function AddressesTab() {
   )
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// Page
 
 export function AccountPage() {
   const { t } = useTranslation()
@@ -1222,7 +1262,7 @@ export function AccountPage() {
   if (!user) {
     return (
       <div className="min-h-[60svh] flex flex-col items-center justify-center gap-4 text-center px-4">
-        <p className="text-5xl">🌸</p>
+        <LogoMark className="size-14" />
         <p className="font-serif text-2xl text-ink">{t('account.login_prompt')}</p>
         <p className="text-sm text-muted">{t('account.login_hint')}</p>
         <Link to="/">
@@ -1254,9 +1294,10 @@ export function AccountPage() {
         </div>
         <button
           onClick={() => setTab('profile')}
-          className="ml-auto text-xs text-muted hover:text-ink shrink-0"
+          className="ml-auto inline-flex items-center gap-1 text-xs text-muted hover:text-ink shrink-0"
         >
-          ✏️ {t('account.profile')}
+          <Pencil className="size-3.5" aria-hidden />
+          {t('account.profile')}
         </button>
       </div>
 
@@ -1302,7 +1343,7 @@ export function AccountPage() {
           >
             {orders.length === 0 ? (
               <div className="text-center py-20">
-                <p className="text-5xl mb-4">🌿</p>
+                <EmptyIcon icon={Package} className="mb-4" />
                 <p className="font-serif text-xl mb-2 text-ink">{t('account.no_orders')}</p>
                 <p className="text-sm text-muted mb-6">{t('account.no_orders_hint')}</p>
                 <Link to="/">
@@ -1324,7 +1365,7 @@ export function AccountPage() {
           >
             {favProducts.length === 0 ? (
               <div className="text-center py-20">
-                <p className="text-5xl mb-4">🤍</p>
+                <EmptyIcon icon={Heart} tone="rose" className="mb-4" />
                 <p className="font-serif text-xl mb-2 text-ink">{t('account.no_favorites')}</p>
                 <Link to="/" className="text-green-deep text-sm hover:underline">
                   {t('account.go_catalog')}

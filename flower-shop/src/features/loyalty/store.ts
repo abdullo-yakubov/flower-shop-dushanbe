@@ -1,3 +1,4 @@
+import { Award, Crown, Medal, type LucideIcon } from 'lucide-react'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { API_ENABLED } from '@/shared/lib/api/client'
@@ -16,7 +17,7 @@ export type LoyaltyTier = 'bronze' | 'silver' | 'gold'
 export interface LoyaltyTierInfo {
   tier: LoyaltyTier
   label: string
-  emoji: string
+  icon: LucideIcon
   minPoints: number
   nextTierPoints: number | null
   color: string
@@ -26,7 +27,7 @@ export const TIERS: LoyaltyTierInfo[] = [
   {
     tier: 'bronze',
     label: 'Бронза',
-    emoji: '🥉',
+    icon: Medal,
     minPoints: 0,
     nextTierPoints: 300,
     color: 'text-orange-600',
@@ -34,7 +35,7 @@ export const TIERS: LoyaltyTierInfo[] = [
   {
     tier: 'silver',
     label: 'Серебро',
-    emoji: '🥈',
+    icon: Award,
     minPoints: 300,
     nextTierPoints: 1000,
     color: 'text-slate-400',
@@ -42,7 +43,7 @@ export const TIERS: LoyaltyTierInfo[] = [
   {
     tier: 'gold',
     label: 'Золото',
-    emoji: '🥇',
+    icon: Crown,
     minPoints: 1000,
     nextTierPoints: null,
     color: 'text-gold',

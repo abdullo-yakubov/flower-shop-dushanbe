@@ -1,3 +1,4 @@
+import { Check, CircleCheck, Heart, ShoppingBag, Truck } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -407,7 +408,7 @@ export function ProductPage() {
           {/* Delivery badge */}
           {product.deliverToday && (
             <div className="flex items-center gap-2 text-sm text-green-deep font-medium bg-green-deep/8 px-4 py-2.5 rounded-[10px]">
-              <span>🚚</span>
+              <Truck className="size-4 shrink-0" aria-hidden />
               <span>{t('product.deliver_today')}</span>
             </div>
           )}
@@ -439,7 +440,10 @@ export function ProductPage() {
                   {t('common.added_to_cart')}
                 </>
               ) : (
-                `🛒 ${t('common.add_to_cart')}`
+                <>
+                  <ShoppingBag className="size-4" aria-hidden />
+                  {t('common.add_to_cart')}
+                </>
               )}
             </Button>
             <Button
@@ -470,7 +474,7 @@ export function ProductPage() {
                         animate={{ opacity: 1, y: 0 }}
                         className="flex flex-col items-center gap-2 py-2 text-center"
                       >
-                        <span className="text-2xl">✓</span>
+                        <CircleCheck className="size-7 text-green-deep" aria-hidden />
                         <p className="text-sm font-semibold text-green-deep">
                           {t('product.request_accepted')}
                         </p>
@@ -530,7 +534,11 @@ export function ProductPage() {
                 onClick={() => toggle(product.id)}
                 className="flex items-center gap-2 text-sm text-muted hover:text-rose-dust transition-colors"
               >
-                <span className={isFav ? 'text-rose-dust' : ''}>{isFav ? '♥' : '♡'}</span>
+                <Heart
+                  className={isFav ? 'size-4 text-rose-dust' : 'size-4'}
+                  fill={isFav ? 'currentColor' : 'none'}
+                  aria-hidden
+                />
                 {isFav ? t('product.in_favorites') : t('product.add_to_favorites')}
               </button>
               <ShareButton title={product.name} text={product.composition} />
@@ -636,7 +644,11 @@ export function ProductPage() {
               </p>
             </div>
             <Button size="sm" onClick={handleAddToCart}>
-              {added ? '✓' : t('common.add_to_cart')}
+              {added ? (
+                <Check className="size-4" aria-label={t('common.added_to_cart')} />
+              ) : (
+                t('common.add_to_cart')
+              )}
             </Button>
           </motion.div>
         )}

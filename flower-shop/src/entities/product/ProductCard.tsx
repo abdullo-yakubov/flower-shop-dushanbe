@@ -1,3 +1,4 @@
+import { Eye, Heart, Star } from 'lucide-react'
 import { useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -160,7 +161,7 @@ export function ProductCard({ product, index = 0 }: Props) {
               transition={{ type: 'spring', stiffness: 380, damping: 12 }}
               className={`text-base leading-none select-none ${isFav ? 'text-rose-dust' : 'text-muted'}`}
             >
-              {isFav ? '♥' : '♡'}
+              <Heart className="size-4" fill={isFav ? 'currentColor' : 'none'} aria-hidden />
             </motion.span>
           </button>
 
@@ -174,7 +175,8 @@ export function ProductCard({ product, index = 0 }: Props) {
             className="absolute bottom-2 inset-x-2 h-8 rounded-xl bg-white/85 backdrop-blur-sm text-xs font-medium text-ink opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200 flex items-center justify-center gap-1"
             aria-label={t('common.quick_view')}
           >
-            👁 {t('common.quick_view')}
+            <Eye className="size-3.5" aria-hidden />
+            {t('common.quick_view')}
           </button>
         </div>
 
@@ -183,7 +185,7 @@ export function ProductCard({ product, index = 0 }: Props) {
           <p className="text-sm font-medium text-ink line-clamp-2 leading-snug">{product.name}</p>
           <p className="text-xs text-muted line-clamp-1">{product.composition}</p>
           <div className="flex items-center gap-1 mt-0.5">
-            <span className="text-gold text-xs">★</span>
+            <Star className="size-3 text-gold" fill="currentColor" strokeWidth={0} aria-hidden />
             <span className="text-xs font-medium">{product.rating.toFixed(1)}</span>
             <span className="text-xs text-muted">({product.reviewCount})</span>
           </div>

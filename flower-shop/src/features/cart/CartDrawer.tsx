@@ -1,3 +1,5 @@
+import { BadgePercent, ShoppingBag } from 'lucide-react'
+import { EmptyIcon } from '@/shared/ui/EmptyIcon'
 import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -39,7 +41,7 @@ function PetalBurst() {
             } as React.CSSProperties
           }
         >
-          ✿
+          <span className="block size-2 rounded-[60%_0] bg-current" />
         </span>
       ))}
     </div>
@@ -117,13 +119,12 @@ export function CartDrawer() {
     <Sheet open={isOpen} onClose={closeCart} side="right" title={t('cart.title')}>
       {items.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-full gap-4 p-8 text-center">
-          <motion.span
-            className="text-6xl select-none"
+          <motion.div
             animate={{ y: [0, -10, 0] }}
             transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
           >
-            🌸
-          </motion.span>
+            <EmptyIcon icon={ShoppingBag} />
+          </motion.div>
           <p className="font-serif text-xl text-ink">{t('cart.empty')}</p>
           <p className="text-sm text-muted">{t('cart.empty_drawer_hint')}</p>
           <Button onClick={closeCart} variant="outline" size="md">
@@ -256,7 +257,8 @@ export function CartDrawer() {
             {promoCode ? (
               <div className="flex items-center justify-between bg-green-deep/8 rounded-[10px] px-3 py-2">
                 <span className="text-sm font-medium text-green-deep">
-                  🎉 {promoCode} — −{promoDiscount}%
+                  <BadgePercent className="inline size-4 mr-1 -mt-0.5" aria-hidden />
+                  {promoCode} — −{promoDiscount}%
                 </span>
                 <button onClick={clearPromo} className="text-muted hover:text-error text-sm">
                   {t('common.remove')}

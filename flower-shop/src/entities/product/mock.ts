@@ -1,27 +1,10 @@
 import type { Product } from './types'
 
-// ─── MARKET AUDIT NOTE (updated 2026-07) ─────────────────────────────────────
-// Prices anchored to LIVE competitor research (July 2026):
-//   • gulianor.tj:   авторские букеты 560–1 680 сом, конструктор от 550 сом
-//   • flowerstyle.tj: пионовидные/коробки 450–1 800 сом, авторские от 1 500 сом
-//   • roza.tj:       51 роза ~350 сом, 101 роза 280–650 сом, тюльпан от 10 сом/шт
-//   • magnit.tj:     7 тюльпанов 209 сом, 21 тюльпан 589 сом
-//
-// Stem cost benchmarks (local Dushanbe market):
-//   • Местные розы: 5–12 сом/стебель
-//   • Голландские/импортные розы: 20–40 сом/стебель
-//   • Тюльпаны: 8–15 сом/стебель
-//   • Пионы: 25–50 сом/стебель
-//   • Хризантемы, ромашки: 8–20 сом/стебель
-//   • Экзотика (стрелиция, протея): 100–150 сом/стебель
-//   • Сборка/упаковка: +80–300 сом в зависимости от объёма
-// ⚠️  Перед запуском в продакшн — сверить с 2–3 текущими поставщиками.
-// ─────────────────────────────────────────────────────────────────────────────
+// Demo catalog used when VITE_API_URL is not set. Prices are in somoni.
 
 const P = (id: number) =>
   `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=600&h=800&fit=crop`
 
-// Every product gets its own unique pair of content-matched photos — no photo ID repeats across the catalog.
 const IMG = {
   redRoses: [P(19269253), P(754273)],
   davidAustin: [P(17295683), P(38396369)],
@@ -51,11 +34,7 @@ const IMG = {
 }
 
 export const MOCK_PRODUCTS: Product[] = [
-  // ── Розы (букеты) ─────────────────────────────────────────────────────────
   {
-    // #1 — 21 роза Фридом: рынок ~25–30 сом/стебель × 21 + сборка 100 ≈ 625 сом
-    // Конкуренты: roza.tj 51 роза ~350 сом → 21 роза ~145 сом (масс-маркет без упак.)
-    // Guli Anor авторский 560–620 сом. Ставим 590 сом — конкурентная серединная цена.
     id: '1',
     slug: 'krasnye-rozy-21',
     name: 'Классические красные розы',
@@ -82,8 +61,6 @@ export const MOCK_PRODUCTS: Product[] = [
     ],
   },
   {
-    // #2 — 15 роз Дэвид Остин: премиум импорт ~60–80 сом/стебель × 15 + сборка 200 ≈ 1100–1400 сом
-    // Guli Anor «Императорский Сад» (премиум) = 1450 сом. Ставим 1200 сом.
     id: '2',
     slug: 'roza-devid-ostin',
     name: 'Роза Дэвид Остин',
@@ -113,8 +90,6 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Розовый микс роз',
     composition: '25 роз разных оттенков розового, лента, упаковка',
     images: [IMG.pinkRoseMix[0], IMG.pinkRoseMix[1]],
-    // #3 — 25 роз розовый микс: ~25 сом/стебель × 25 + сборка 130 ≈ 755 сом
-    // Guli Anor «Розовая Линия» = 560 сом (меньше роз). Ставим 720 сом.
     price: 720,
     rating: 4.7,
     reviewCount: 63,
@@ -139,8 +114,6 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Монобукет белых роз',
     composition: '19 белых роз Аваланш, флористическая бумага',
     images: [IMG.whiteRoseMono[0], IMG.whiteRoseMono[1]],
-    // #4 — 19 роз Аваланш: голландский сорт ~35 сом/стебель × 19 + сборка 120 ≈ 785 сом
-    // Guli Anor «Белая Поэзия» (моно белые) = 740 сом. Ставим 760 сом.
     price: 760,
     rating: 4.8,
     reviewCount: 34,
@@ -159,17 +132,12 @@ export const MOCK_PRODUCTS: Product[] = [
       { id: 'l', label: 'L', price: 1100 },
     ],
   },
-  // ── Розы (штучные) ────────────────────────────────────────────────────────
   {
     id: '5',
     slug: 'alye-rozy-11',
     name: '11 алых роз',
     composition: 'Розы Red Naomi — поштучный выбор количества',
     images: [IMG.redRoseSingle[0], IMG.redRoseSingle[1]],
-    // #5 — Red Naomi поштучно: рынок 20–40 сом/стебель (голландский импорт)
-    // roza.tj: 51 роза ~350 сом = ~7 сом/шт (масс-маркет). Розничная наценка × 2–3.
-    // Guli Anor: бутик-цена ~35–40 сом/шт. Ставим 28 сом/стебель — средний розничный.
-    // M-size aggregate = 11 × 28 = 308
     price: 28,
     oldPrice: 45,
     discount: 38,
@@ -194,8 +162,6 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Розы с гипсофилой',
     composition: '15 роз Эквадор, облако гипсофилы, рускус',
     images: [IMG.roseGypsophila[0], IMG.roseGypsophila[1]],
-    // #6 — 15 роз с гипсофилой: ~28 сом × 15 + гипсофила 80 + сборка 80 ≈ 580 сом
-    // Guli Anor «Розовая Линия» (похожий формат) = 560 сом. Ставим 580 сом.
     price: 580,
     rating: 4.8,
     reviewCount: 55,
@@ -214,15 +180,12 @@ export const MOCK_PRODUCTS: Product[] = [
     ],
   },
 
-  // ── Пионы ─────────────────────────────────────────────────────────────────
   {
     id: '7',
     slug: 'piony-nezhno-rozovye',
     name: 'Нежные розовые пионы',
     composition: '15 пионов сорта Сара Бернар, листья эвкалипта',
     images: [IMG.pinkPeony[0], IMG.pinkPeony[1]],
-    // #7 — 15 пионов Сара Бернар: рынок ~35–50 сом/стебель × 15 + сборка 150 ≈ 675–900 сом
-    // Flower Style пионовидные коробки от 450 сом. Ставим 780 сом.
     price: 780,
     oldPrice: 1200,
     discount: 35,
@@ -249,8 +212,6 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Белоснежные пионы',
     composition: '11 белых пионов Duchesse de Nemours, зелень смилакс',
     images: [IMG.whitePeony[0], IMG.whitePeony[1]],
-    // #8 — 11 белых пионов: ~40 сом/стебель × 11 + сборка 120 ≈ 560 сом
-    // Ставим 580 сом — конкурентная цена.
     price: 580,
     rating: 5.0,
     reviewCount: 31,
@@ -275,8 +236,6 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Пионы в шляпной коробке',
     composition: '20 пионов, мох, сухоцветы, шляпная коробка',
     images: [IMG.peonyHatbox[0], IMG.peonyHatbox[1]],
-    // #9 — 20 пионов в шляпной коробке: ~40 сом × 20 + коробка 250 ≈ 1050 сом
-    // Flower Style коробки от 450–1800 сом (разный объём). Ставим 1050 сом.
     price: 1050,
     rating: 4.9,
     reviewCount: 22,
@@ -295,15 +254,12 @@ export const MOCK_PRODUCTS: Product[] = [
       { id: 'l', label: 'L', price: 1500 },
     ],
   },
-  // ── Пионы (штучные) ───────────────────────────────────────────────────────
   {
     id: '10',
     slug: 'piony-poshtuchno',
     name: 'Пионы поштучно',
     composition: 'Пионы с эвкалиптом — выбор количества стеблей',
     images: [IMG.peonySingle[0], IMG.peonySingle[1]],
-    // #10 — Пионы поштучно: рынок ~35–50 сом/стебель. Ставим 38 сом/стебель.
-    // M-size aggregate = 11 × 38 = 418
     price: 38,
     rating: 4.7,
     reviewCount: 44,
@@ -320,15 +276,12 @@ export const MOCK_PRODUCTS: Product[] = [
     sizes: [{ id: 'm', label: 'M', price: 418 }],
   },
 
-  // ── Тюльпаны ──────────────────────────────────────────────────────────────
   {
     id: '11',
     slug: 'tyulpany-51',
     name: 'Тюльпаны 51 шт',
     composition: '51 тюльпан разных цветов, упаковка крафт',
     images: [IMG.tulipMix51[0], IMG.tulipMix51[1]],
-    // #11 — Тюльпаны 51 шт: 2100 → 1100 (audit: ~20 сом/стебель × 51 + сборка ~80)
-    // oldPrice = pre-audit; discount recalculated: (2100-1100)/2100 ≈ 48%
     price: 1100,
     oldPrice: 2100,
     discount: 48,
@@ -355,8 +308,6 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Тюльпаны поштучно',
     composition: 'Тюльпаны Purple Prince — выбор количества стеблей',
     images: [IMG.tulipSinglePurple[0], IMG.tulipSinglePurple[1]],
-    // #12 — Тюльпаны поштучно: рынок 10–15 сом/стебель. Ставим 12 сом/стебель.
-    // M-size aggregate = 11 × 12 = 132
     price: 12,
     rating: 4.7,
     reviewCount: 58,
@@ -378,8 +329,6 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Жёлтые тюльпаны',
     composition: '25 тюльпанов Strong Gold, бумажная упаковка',
     images: [IMG.yellowTulip[0], IMG.yellowTulip[1]],
-    // #13 — 25 тюльпанов: ~12 сом × 25 + сборка 90 = 390 сом
-    // Magnit.tj: 21 шт = 589 сом (розничная + доставка). Ставим 420 сом (без доставки).
     price: 420,
     rating: 4.6,
     reviewCount: 73,
@@ -403,8 +352,6 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Тюльпаны в боксе',
     composition: '35 тюльпанов, флористический мох, деревянный ящик',
     images: [IMG.tulipBox[0], IMG.tulipBox[1]],
-    // #14 — 35 тюльпанов в боксе: ~12 сом × 35 + ящик 300 + мох/сборка 200 ≈ 920 сом
-    // Flower Style коробки от 450 сом. Деревянный ящик — доп. ценность. Ставим 950 сом.
     price: 950,
     rating: 4.9,
     reviewCount: 19,
@@ -424,16 +371,12 @@ export const MOCK_PRODUCTS: Product[] = [
     ],
   },
 
-  // ── Весенний/луговой микс ─────────────────────────────────────────────────
   {
     id: '15',
     slug: 'vesenniy-miks',
     name: 'Весенний микс',
     composition: 'Тюльпаны, нарциссы, фрезия, мимоза — 7 видов',
     images: [IMG.springMix[0], IMG.springMix[1]],
-    // #15 — Весенний микс: Magnit.tj 7 тюльпанов = 209 сом, 21 = 589 сом
-    // Миксовый букет ~25 стеблей × средн. 12 сом + сборка 150 = ~450 сом
-    // Guli Anor базовый уровень от 550–560 сом. Ставим 480 сом.
     price: 480,
     oldPrice: 700,
     discount: 31,
@@ -460,8 +403,6 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Луговые цветы',
     composition: 'Ромашки, васильки, полевые тюльпаны, сухоцветы, колоски',
     images: [IMG.meadowFlowers[0], IMG.meadowFlowers[1]],
-    // #16 — Луговые цветы: полевые/местные 8–12 сом avg × ~30 стеблей + сборка 80 ≈ 320–440 сом
-    // Ставим 350 сом — самый бюджетный «живой» вариант в каталоге.
     price: 350,
     rating: 4.6,
     reviewCount: 47,
@@ -479,14 +420,12 @@ export const MOCK_PRODUCTS: Product[] = [
       { id: 'l', label: 'L', price: 510 },
     ],
   },
-  // ── Сухоцветы ─────────────────────────────────────────────────────────────
   {
     id: '17',
     slug: 'polevoy-buket-sukhoy',
     name: 'Полевой букет сухоцветов',
     composition: 'Гипсофила, хлопок, эвкалипт, лаванда, сухие травы',
     images: [IMG.driedField[0], IMG.driedField[1]],
-    // #17 — Полевой букет сухоцветов: 1300 → 1100 (🟢 close to market; minor correction)
     price: 1100,
     rating: 4.7,
     reviewCount: 61,
@@ -511,8 +450,6 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Садовый микс',
     composition: 'Розы, пионы, гортензия, лизиантус — премиум состав',
     images: [IMG.gardenMix[0], IMG.gardenMix[1]],
-    // #18 — Садовый микс (роза/пион/гортензия/лизиантус): 2500 → 1700
-    // (audit: mixed premium ~60 сом avg × ~20 + сборка ~500)
     price: 1700,
     rating: 4.8,
     reviewCount: 38,
@@ -531,15 +468,12 @@ export const MOCK_PRODUCTS: Product[] = [
     ],
   },
 
-  // ── Белые / хризантемы ────────────────────────────────────────────────────
   {
     id: '19',
     slug: 'belye-romashki',
     name: 'Садовые ромашки',
     composition: '50 ромашек, флористическая лента, крафт-упаковка',
     images: [IMG.daisies[0], IMG.daisies[1]],
-    // #19 — 50 ромашек: местные 5–8 сом/стебель × 50 + сборка 50 = 300–450 сом
-    // Ставим 390 сом — конкурентно для большого объёма.
     price: 390,
     rating: 4.5,
     reviewCount: 82,
@@ -563,8 +497,6 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Белые хризантемы',
     composition: '25 хризантем Bacardi, декоративная зелень, рафия',
     images: [IMG.whiteChrysanthemum[0], IMG.whiteChrysanthemum[1]],
-    // #20 — 25 хризантем Bacardi: ~15 сом/стебель × 25 + зелень 60 + сборка 80 = 515 сом
-    // Ставим 520 сом. oldPrice = прежняя завышенная цена.
     price: 520,
     oldPrice: 800,
     discount: 35,
@@ -584,14 +516,12 @@ export const MOCK_PRODUCTS: Product[] = [
       { id: 'l', label: 'L', price: 760 },
     ],
   },
-  // ── Сухоцветы (монобуке) ──────────────────────────────────────────────────
   {
     id: '21',
     slug: 'sukhye-tsvety-pampas',
     name: 'Пампасная трава и сухоцветы',
     composition: 'Пампасная трава, хлопок, лагурус, гелихризум, лаванда',
     images: [IMG.pampas[0], IMG.pampas[1]],
-    // #21 — Пампасная трава и сухоцветы: 2300 → 1900 (🟢 close to market; minor correction)
     price: 1900,
     rating: 4.9,
     reviewCount: 27,
@@ -616,8 +546,6 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Классический белый',
     composition: '21 эустома, гипсофила, рускус — элегантный моно',
     images: [IMG.whiteEustoma[0], IMG.whiteEustoma[1]],
-    // #22 — 21 эустома: ~25 сом × 21 + гипсофила 60 + сборка 80 = 665 сом
-    // Guli Anor «Белая Поэзия» = 740 сом. Ставим 680 сом.
     price: 680,
     rating: 4.8,
     reviewCount: 41,
@@ -636,14 +564,12 @@ export const MOCK_PRODUCTS: Product[] = [
     ],
   },
 
-  // ── Экзотика ──────────────────────────────────────────────────────────────
   {
     id: '23',
     slug: 'ekzoticheskiy-buket',
     name: 'Экзотический букет',
     composition: 'Протея, стрелиция, антуриум, тропические листья',
     images: [IMG.exotic[0], IMG.exotic[1]],
-    // #23 — Протея + стрелиция + антуриум: 3800 → 3400 (🟢 justified; audit: ~120 сом × ~25 + сборка ~400)
     price: 3400,
     rating: 4.9,
     reviewCount: 16,
@@ -668,8 +594,6 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Садовые гортензии',
     composition: '5 гортензий разных цветов, флористическая зелень',
     images: [IMG.hydrangea[0], IMG.hydrangea[1]],
-    // #24 — 5 гортензий: ~100–120 сом/голова × 5 + сборка 150 = 650–750 сом ✅ рынок
-    // Оставляем 900 сом — включает упаковку и микс цветов. Конкурентная цена.
     price: 900,
     oldPrice: 1300,
     discount: 31,
@@ -691,15 +615,12 @@ export const MOCK_PRODUCTS: Product[] = [
     ],
   },
 
-  // ── Траурные ──────────────────────────────────────────────────────────────
   {
     id: '25',
     slug: 'traurnyy-buket',
     name: 'Траурный букет',
     composition: '15 белых хризантем, белые лилии, зелень — сдержанная элегантность',
     images: [IMG.funeral[0], IMG.funeral[1]],
-    // #25 — Траурный букет: ~15 сом × 15 хризантем + лилии ~80 + зелень + сборка 100 ≈ 405 сом
-    // Ставим 450 сом — достойная и доступная цена для данного случая.
     price: 450,
     rating: 4.8,
     reviewCount: 12,

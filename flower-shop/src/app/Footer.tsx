@@ -1,3 +1,4 @@
+import { Clock, MapPin, Phone } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Logo } from '@/shared/ui/Logo'
@@ -94,17 +95,17 @@ export function Footer() {
           </p>
           <ul className="space-y-2 text-sm text-white/60">
             <li className="flex items-center gap-2">
-              <span>📍</span>
+              <MapPin className="size-4 shrink-0" aria-hidden />
               <span>{t('footer.address')}</span>
             </li>
             <li className="flex items-center gap-2">
-              <span>📞</span>
+              <Phone className="size-4 shrink-0" aria-hidden />
               <a href="tel:+992004048769" className="hover:text-white transition-colors">
                 +992 004 048 769
               </a>
             </li>
             <li className="flex items-center gap-2">
-              <span>🕐</span>
+              <Clock className="size-4 shrink-0" aria-hidden />
               <span>{t('footer.hours')}</span>
             </li>
           </ul>

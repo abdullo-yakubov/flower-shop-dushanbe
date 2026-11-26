@@ -1,11 +1,12 @@
 import { useTranslation } from 'react-i18next'
 import { useThemeStore, type ThemeMode } from '@/features/theme/store'
+import { Monitor, Moon, Sun, type LucideIcon } from 'lucide-react'
 import { cn } from '@/shared/lib/cn'
 
-const OPTIONS: { value: ThemeMode; tKey: string; icon: string }[] = [
-  { value: 'light', tKey: 'theme.light', icon: '☀' },
-  { value: 'dark', tKey: 'theme.dark', icon: '☾' },
-  { value: 'system', tKey: 'theme.system', icon: '⊙' },
+const OPTIONS: { value: ThemeMode; tKey: string; icon: LucideIcon }[] = [
+  { value: 'light', tKey: 'theme.light', icon: Sun },
+  { value: 'dark', tKey: 'theme.dark', icon: Moon },
+  { value: 'system', tKey: 'theme.system', icon: Monitor },
 ]
 
 export function ThemeToggle({ compact = false }: { compact?: boolean }) {
@@ -22,7 +23,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
         aria-label={t('theme.switch_hint', { theme: t(current.tKey) })}
         title={t(current.tKey)}
       >
-        <span className="text-base leading-none">{current.icon}</span>
+        <current.icon className="size-[18px]" aria-hidden />
       </button>
     )
   }
@@ -43,7 +44,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
           )}
           aria-pressed={theme === opt.value}
         >
-          <span>{opt.icon}</span>
+          <opt.icon className="size-3.5" aria-hidden />
           {t(opt.tKey)}
         </button>
       ))}

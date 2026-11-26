@@ -1,3 +1,4 @@
+import { Star } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -156,8 +157,8 @@ export function Header() {
           >
             <UserIcon />
             {user && loyaltyPoints > 0 && (
-              <span className="absolute -bottom-0.5 -right-0.5 bg-gold text-ink text-[9px] font-bold leading-none px-1 py-0.5 rounded-full">
-                ⭐
+              <span className="absolute -bottom-0.5 -right-0.5 bg-gold text-ink leading-none p-0.5 rounded-full">
+                <Star className="size-2.5" fill="currentColor" strokeWidth={0} aria-hidden />
               </span>
             )}
           </button>

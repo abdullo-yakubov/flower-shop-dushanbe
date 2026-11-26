@@ -14,7 +14,6 @@ RUN dotnet restore "src/FlowerShop.API/FlowerShop.API.csproj"
 
 COPY . .
 WORKDIR "/src/src/FlowerShop.API"
-RUN dotnet build "FlowerShop.API.csproj" -c Release -o /app/build
 
 FROM build AS publish
 RUN dotnet publish "FlowerShop.API.csproj" -c Release -o /app/publish /p:UseAppHost=false

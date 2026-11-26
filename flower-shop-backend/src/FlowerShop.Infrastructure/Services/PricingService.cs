@@ -72,7 +72,7 @@ public class PricingService(AppDbContext db)
             pointsDiscount, total, total / LoyaltyConstants.EarnDivisor, holiday?.NameRu);
     }
 
-    // ── Items ────────────────────────────────────────────────────────────────
+    // Items
 
     private async Task<List<PricedItem>> ResolveItemsAsync(
         IEnumerable<CreateOrderItem> requested, HolidayPricing? holiday, CancellationToken ct)
@@ -140,7 +140,7 @@ public class PricingService(AppDbContext db)
         _ => throw new AppException("VALIDATION_ERROR", "Недопустимый тип упаковки")
     };
 
-    // ── Addons ───────────────────────────────────────────────────────────────
+    // Addons
 
     private async Task<List<PricedAddon>> ResolveAddonsAsync(IEnumerable<CreateOrderAddon>? requested, CancellationToken ct)
     {
@@ -167,7 +167,7 @@ public class PricingService(AppDbContext db)
         }).ToList();
     }
 
-    // ── Delivery ─────────────────────────────────────────────────────────────
+    // Delivery
 
     private async Task<int> CalculateDeliveryAsync(Guid? zoneId, int itemsSubtotal, CancellationToken ct)
     {
@@ -183,7 +183,7 @@ public class PricingService(AppDbContext db)
         return itemsSubtotal >= threshold ? 0 : fee;
     }
 
-    // ── Promo ────────────────────────────────────────────────────────────────
+    // Promo
 
     /// <summary>Returns the active promo for <paramref name="code"/> or throws a user-facing error.</summary>
     public async Task<PromoCode> FindValidPromoAsync(string code, int itemsSubtotal, CancellationToken ct)
@@ -214,7 +214,7 @@ public class PricingService(AppDbContext db)
         return (promo, CalculatePromoDiscount(promo, itemsSubtotal));
     }
 
-    // ── Loyalty points ───────────────────────────────────────────────────────
+    // Loyalty points
 
     /// <summary>
     /// Points are worth 1 сомони each, capped by the balance and by MaxRedeemPercent of the amount due.
@@ -233,7 +233,7 @@ public class PricingService(AppDbContext db)
         return applied >= LoyaltyConstants.MinRedeem ? applied : 0;
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
+    // Helpers
 
     private Task<HolidayPricing?> FindHolidayAsync(DateOnly date, CancellationToken ct) =>
         db.HolidayPricings.FirstOrDefaultAsync(h => h.Month == date.Month && h.Day == date.Day && h.IsActive, ct);

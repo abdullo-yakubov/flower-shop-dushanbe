@@ -1,3 +1,5 @@
+import { SearchX, TrendingUp, X } from 'lucide-react'
+import { EmptyIcon } from '@/shared/ui/EmptyIcon'
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -115,10 +117,10 @@ export function SearchPage() {
                 setParams({})
                 inputRef.current?.focus()
               }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full bg-border/60 text-muted hover:bg-border hover:text-ink transition-colors text-xs"
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full bg-border/60 text-muted hover:bg-border hover:text-ink transition-colors"
               aria-label={t('common.clear')}
             >
-              ✕
+              <X className="size-3.5" aria-hidden />
             </motion.button>
           )}
         </AnimatePresence>
@@ -168,9 +170,10 @@ export function SearchPage() {
                   <button
                     key={s}
                     onClick={() => pickQuery(s)}
-                    className="h-8 px-3 rounded-full bg-green-deep/10 text-green-deep text-sm font-medium hover:bg-green-deep hover:text-white transition-colors"
+                    className="h-8 px-3 inline-flex items-center gap-1.5 rounded-full bg-green-deep/10 text-green-deep text-sm font-medium hover:bg-green-deep hover:text-white transition-colors"
                   >
-                    🔥 {s}
+                    <TrendingUp className="size-3.5" aria-hidden />
+                    {s}
                   </button>
                 ))}
               </div>
@@ -210,7 +213,7 @@ export function SearchPage() {
               </div>
             ) : (
               <div className="text-center py-16">
-                <p className="text-5xl mb-4">🔍</p>
+                <EmptyIcon icon={SearchX} tone="muted" className="mb-4" />
                 <p className="font-serif text-xl text-ink mb-2">{t('search.no_results')}</p>
                 <p className="text-sm text-muted mb-6">{t('search.no_results_hint')}</p>
                 <div className="flex flex-wrap justify-center gap-2">

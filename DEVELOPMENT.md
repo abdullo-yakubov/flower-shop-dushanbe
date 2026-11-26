@@ -29,6 +29,9 @@
 
 - Логотип-тюльпан (`shared/ui/Logo.tsx`) в шапке и подвале, новый `favicon.svg` вместо логотипа Vite.
 - `theme-color` в фирменных цветах для светлой/тёмной темы, `description` и Open Graph.
+- Эмодзи в интерфейсе заменены единым набором линейных иконок lucide-react (оплата, поводы, статусы заказа,
+  подарки, открытки, пустые состояния); общий компонент `shared/ui/EmptyIcon.tsx`.
+- Из текстов переводов и комментариев убраны эмодзи и декоративные разделители.
 
 ### Безопасность и инфраструктура
 
@@ -44,6 +47,9 @@
 - Удалено лишнее: MinIO (не использовался), дубль docker-compose в `flower-shop-backend/`, неиспользуемые
   `UserRepository`/`OrderRepository`/`UnitOfWork`, шаблонные файлы Vite (`App.tsx`, `App.css`, `assets/*`, `icons.svg`),
   устаревший `TASK_IMAGES.md`, `FlowerShop.API.http` (weatherforecast), ветка `improvements`.
+- Удалены неподключённая страница `pages/Home`, неиспользуемые `useClickOutside`, `useOffline`,
+  `shared/lib/constants.ts`, `shared/lib/motion.ts` и скрипт `check-consistency.mjs`.
+- `appsettings.Development.json` и тесты больше не попадают в Docker-образ API.
 - Тесты: бэкенд 41 (xUnit: цены, промо, баллы, валидация, файлы), фронтенд 50 (vitest).
 
 ## Осталось

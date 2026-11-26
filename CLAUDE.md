@@ -19,7 +19,6 @@ npm run dev                 # http://localhost:5173 (VITE_API_URL пустой �
 npx tsc -b --noEmit && npx eslint . --max-warnings 0
 npm test                    # vitest
 npm run build && npm run check:bundle   # бюджет 350 КБ gzip
-npm run check:consistency   # сверка конфигов/i18n
 
 # Backend (flower-shop-backend/)
 dotnet build FlowerShop.slnx -c Release

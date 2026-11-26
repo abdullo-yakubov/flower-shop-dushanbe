@@ -7,7 +7,7 @@ import { unitPrice } from '@/features/cart/store'
 import { BASKET_SURCHARGE } from '@/shared/config/packagingConfig'
 import type { Product, ProductSize } from '@/entities/product/types'
 
-// ─── Loyalty: calcEarn ────────────────────────────────────────────────────────
+// Loyalty: calcEarn
 
 describe('calcEarn', () => {
   it('earns 1 point per 20 TJS', () => expect(calcEarn(20)).toBe(1))
@@ -18,7 +18,7 @@ describe('calcEarn', () => {
   it('handles large amounts', () => expect(calcEarn(15000)).toBe(750))
 })
 
-// ─── Loyalty: getTier ─────────────────────────────────────────────────────────
+// Loyalty: getTier
 
 describe('getTier', () => {
   it('bronze at 0 points', () => expect(getTier(0).tier).toBe('bronze'))
@@ -29,7 +29,7 @@ describe('getTier', () => {
   it('gold at 9999 points', () => expect(getTier(9999).tier).toBe('gold'))
 })
 
-// ─── Loyalty: maxRedeemable formula ──────────────────────────────────────────
+// Loyalty: maxRedeemable formula
 
 describe('maxRedeemable (pure formula check)', () => {
   const maxRedeemable = (balance: number, orderTotal: number) =>
@@ -46,7 +46,7 @@ describe('maxRedeemable (pure formula check)', () => {
   })
 })
 
-// ─── Holiday pricing ──────────────────────────────────────────────────────────
+// Holiday pricing
 
 describe('applyHolidayPrice', () => {
   const active = { active: true, name: 'Test', multiplier: 1.3 }
@@ -60,7 +60,7 @@ describe('applyHolidayPrice', () => {
   it('handles 0 price', () => expect(applyHolidayPrice(0, active)).toBe(0))
 })
 
-// ─── Promo codes ─────────────────────────────────────────────────────────────
+// Promo codes
 
 describe('findPromo', () => {
   it('finds WELCOME20', () => expect(findPromo('WELCOME20')?.discountPct).toBe(20))
@@ -81,7 +81,7 @@ describe('findPromo', () => {
   })
 })
 
-// ─── Cart: unit price (mirrors backend PricingService) ────────────────────────
+// Cart: unit price (mirrors backend PricingService)
 
 describe('unitPrice', () => {
   const size = { id: 's', label: 'M', price: 600 } as ProductSize
@@ -97,7 +97,7 @@ describe('unitPrice', () => {
     expect(unitPrice(tulips, size, 'basket', 11)).toBe(132 + BASKET_SURCHARGE))
 })
 
-// ─── Promo: cart discount formula ─────────────────────────────────────────────
+// Promo: cart discount formula
 
 describe('cart discount formula', () => {
   const applyDiscount = (subtotal: number, pct: number) => Math.round(subtotal * (1 - pct / 100))
@@ -107,7 +107,7 @@ describe('cart discount formula', () => {
   it('0% changes nothing', () => expect(applyDiscount(1000, 0)).toBe(1000))
 })
 
-// ─── Pluralization ────────────────────────────────────────────────────────────
+// Pluralization
 
 describe('pluralPoints (Russian)', () => {
   it('1 → балл', () => expect(pluralPoints(1, 'ru')).toBe('балл'))
@@ -125,7 +125,7 @@ describe('pluralPoints (English)', () => {
   it('0 → points', () => expect(pluralPoints(0, 'en')).toBe('points'))
 })
 
-// ─── TIERS sanity ─────────────────────────────────────────────────────────────
+// TIERS sanity
 
 describe('TIERS', () => {
   it('has exactly 3 tiers', () => expect(TIERS).toHaveLength(3))

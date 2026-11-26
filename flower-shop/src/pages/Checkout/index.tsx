@@ -1,3 +1,4 @@
+import { Banknote, BellRing, Check, CreditCard, Smartphone, Star } from 'lucide-react'
 import { useState, useMemo, useEffect } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -23,20 +24,20 @@ import { DELIVERY_PRICE_DEFAULT, FREE_DELIVERY_THRESHOLD } from '@/shared/config
 import { apiCreateOrder } from '@/shared/lib/api/orders'
 import { toast } from '@/shared/ui/toast.store'
 
-// ─── Config ──────────────────────────────────────────────────────────────────
+// Config
 
 const DELIVERY_FEE = DELIVERY_PRICE_DEFAULT
 
 const PAYMENTS = [
-  { id: 'dc', tKey: 'checkout.pay_dc', icon: '💳' },
-  { id: 'alif', tKey: 'checkout.pay_alif', icon: '📱' },
-  { id: 'cash', tKey: 'checkout.pay_cash', icon: '💵' },
+  { id: 'dc', tKey: 'checkout.pay_dc', icon: CreditCard },
+  { id: 'alif', tKey: 'checkout.pay_alif', icon: Smartphone },
+  { id: 'cash', tKey: 'checkout.pay_cash', icon: Banknote },
 ] as const
 
 // Use TIME_SLOTS from deliveryConfig — single source of truth for time slot strings
 const TIMES = TIME_SLOTS
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// Helpers
 
 function getDeliveryDates(t: TFunction) {
   const today = new Date()
@@ -56,7 +57,7 @@ function getDeliveryDates(t: TFunction) {
   })
 }
 
-// ─── Schema ──────────────────────────────────────────────────────────────────
+// Schema
 
 function makeSchema(t: TFunction) {
   return z.object({
@@ -77,7 +78,7 @@ function makeSchema(t: TFunction) {
 }
 type FormData = z.infer<ReturnType<typeof makeSchema>>
 
-// ─── Addon item ───────────────────────────────────────────────────────────────
+// Addon item
 
 function AddonItem({
   addon,
@@ -101,8 +102,8 @@ function AddonItem({
   const displayName = useTranslationKeys ? t(addon.name) : addon.name
   return (
     <div className="flex gap-4 p-4 bg-surface rounded-xl border border-border">
-      <div className="text-4xl w-12 h-12 flex items-center justify-center shrink-0">
-        {addon.emoji}
+      <div className="w-12 h-12 rounded-xl bg-green-deep/10 text-green-deep flex items-center justify-center shrink-0">
+        <addon.icon className="size-6" strokeWidth={1.5} aria-hidden />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
@@ -163,7 +164,7 @@ function AddonItem({
   )
 }
 
-// ─── Checkout page ────────────────────────────────────────────────────────────
+// Checkout page
 
 export function CheckoutPage() {
   const { t, i18n } = useTranslation()
@@ -234,6 +235,8 @@ export function CheckoutPage() {
 
   const willEarn = calcEarn(grandTotal)
   const maxPts = maxRedeemable(total() + delivery + addonsTotal)
+
+  const selectedPostcard = POSTCARD_DESIGNS.find((d) => d.id === selectedDesign)
 
   const filteredTemplates = MESSAGE_TEMPLATES.filter(
     (tpl) => tpl.category === activeCategory || tpl.category === 'universal'
@@ -369,7 +372,7 @@ export function CheckoutPage() {
         className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8"
       >
         <div className="space-y-6">
-          {/* ── 1. Получатель ── */}
+          {/* 1. Получатель */}
           <Section num={1} title={t('checkout.recipient')}>
             <div className="flex gap-3">
               {[t('checkout.for_me'), t('checkout.as_gift')].map((label, i) => (
@@ -421,7 +424,7 @@ export function CheckoutPage() {
             </AnimatePresence>
           </Section>
 
-          {/* ── 2. Открытка ── */}
+          {/* 2. Открытка */}
           <Section num={2} title={t('checkout.postcard')}>
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
               {(
@@ -459,15 +462,15 @@ export function CheckoutPage() {
                       : 'border-border hover:border-green-deep/40 bg-surface'
                   }`}
                 >
-                  <span className="text-2xl">{d.emoji}</span>
+                  <d.icon className="size-6 text-green-deep" strokeWidth={1.5} aria-hidden />
                   {d.label && (
                     <span className="text-[9px] text-muted leading-tight">
                       {useTranslationKeys ? t(d.label) : d.label}
                     </span>
                   )}
                   {d.isPopular && (
-                    <span className="absolute -top-1 -right-1 bg-rose-dust text-ink text-[8px] font-bold px-1 rounded-md leading-4">
-                      ★
+                    <span className="absolute -top-1 -right-1 bg-rose-dust text-ink p-0.5 rounded-md">
+                      <Star className="size-2.5" fill="currentColor" strokeWidth={0} aria-hidden />
                     </span>
                   )}
                 </button>
@@ -488,7 +491,14 @@ export function CheckoutPage() {
                       onClick={() => setCardText(displayText)}
                       className="w-full text-left px-3 py-2.5 rounded-xl border border-border text-xs text-muted hover:border-green-deep hover:text-ink transition-all bg-surface leading-relaxed"
                     >
-                      {tpl.isPopular && <span className="text-amber-400 mr-1">★</span>}
+                      {tpl.isPopular && (
+                        <Star
+                          className="inline size-3 mr-1 -mt-0.5 text-amber-400"
+                          fill="currentColor"
+                          strokeWidth={0}
+                          aria-hidden
+                        />
+                      )}
                       {displayText}
                     </button>
                   )
@@ -519,10 +529,12 @@ export function CheckoutPage() {
                   exit={{ opacity: 0 }}
                   className="border border-border rounded-xl p-5 bg-cream"
                 >
-                  {selectedDesign && (
-                    <p className="text-3xl mb-2">
-                      {POSTCARD_DESIGNS.find((d) => d.id === selectedDesign)?.emoji}
-                    </p>
+                  {selectedPostcard && (
+                    <selectedPostcard.icon
+                      className="size-8 mb-2 text-rose-dust"
+                      strokeWidth={1.5}
+                      aria-hidden
+                    />
                   )}
                   {cardText && (
                     <p className="font-serif text-base italic text-ink leading-relaxed">
@@ -534,7 +546,7 @@ export function CheckoutPage() {
             </AnimatePresence>
           </Section>
 
-          {/* ── 3. Доп. товары ── */}
+          {/* 3. Доп. товары */}
           <Section num={3} title={t('checkout.addons')}>
             <p className="text-sm text-muted -mt-1">{t('checkout.addons_hint')}</p>
             <div className="space-y-3">
@@ -556,7 +568,7 @@ export function CheckoutPage() {
             </div>
           </Section>
 
-          {/* ── 4. Доставка ── */}
+          {/* 4. Доставка */}
           <Section num={4} title={t('checkout.delivery')}>
             <Input
               label={t('checkout.address')}
@@ -606,7 +618,7 @@ export function CheckoutPage() {
             </div>
           </Section>
 
-          {/* ── 5. Оплата ── */}
+          {/* 5. Оплата */}
           <Section num={5} title={t('checkout.payment')}>
             {PAYMENTS.map((pay) => (
               <label
@@ -618,15 +630,15 @@ export function CheckoutPage() {
                 }`}
               >
                 <input type="radio" {...register('payment')} value={pay.id} className="sr-only" />
-                <span className="text-2xl">{pay.icon}</span>
+                <pay.icon className="size-5 text-green-deep" aria-hidden />
                 <span className="text-sm font-medium text-ink">{t(pay.tKey)}</span>
                 {selectedPayment === pay.id && (
                   <motion.span
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="ml-auto text-green-deep font-semibold text-lg"
+                    className="ml-auto text-green-deep"
                   >
-                    ✓
+                    <Check className="size-5" aria-hidden />
                   </motion.span>
                 )}
               </label>
@@ -634,7 +646,7 @@ export function CheckoutPage() {
           </Section>
         </div>
 
-        {/* ── Order summary sidebar ── */}
+        {/* Order summary sidebar */}
         <div className="lg:sticky lg:top-20 self-start space-y-4">
           <div className="bg-surface rounded-2xl p-6 shadow-[0_4px_24px_rgba(0,0,0,0.06)] space-y-3">
             <h2 className="font-serif text-xl font-semibold text-ink mb-1">
@@ -671,8 +683,8 @@ export function CheckoutPage() {
 
             {ADDONS.filter((a) => (addonQtys[a.id] || 0) > 0).map((a) => (
               <div key={a.id} className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-lg bg-cream flex items-center justify-center text-2xl shrink-0">
-                  {a.emoji}
+                <div className="w-12 h-12 rounded-lg bg-cream text-green-deep flex items-center justify-center shrink-0">
+                  <a.icon className="size-5" strokeWidth={1.5} aria-hidden />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-ink line-clamp-1">
@@ -740,7 +752,12 @@ export function CheckoutPage() {
 
             {/* Points earn preview */}
             <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl px-3 py-2.5 flex items-center gap-2 border border-amber-200 dark:border-amber-800">
-              <span className="text-base">⭐</span>
+              <Star
+                className="size-4 shrink-0 text-amber-500"
+                fill="currentColor"
+                strokeWidth={0}
+                aria-hidden
+              />
               <p className="text-xs text-amber-700 dark:text-amber-300 font-medium">
                 {t('checkout.earn_points')}{' '}
                 <span className="font-bold">
@@ -814,7 +831,7 @@ export function CheckoutPage() {
   )
 }
 
-// ─── Section wrapper ──────────────────────────────────────────────────────────
+// Section wrapper
 
 function Section({
   num,
@@ -838,7 +855,7 @@ function Section({
   )
 }
 
-// ─── Success screen ───────────────────────────────────────────────────────────
+// Success screen
 
 // Petals that burst around the checkmark circle
 function SuccessPetals() {
@@ -865,7 +882,7 @@ function SuccessPetals() {
             } as React.CSSProperties
           }
         >
-          🌸
+          <span className="block size-2.5 rounded-[60%_0] bg-rose-dust" />
         </span>
       ))}
     </div>
@@ -940,7 +957,12 @@ function SuccessScreen({ orderNum, earnedPts }: { orderNum: string; earnedPts: n
           transition={{ delay: 0.5 }}
           className="w-full bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl px-4 py-3 flex items-center gap-3"
         >
-          <span className="text-2xl">⭐</span>
+          <Star
+            className="size-6 shrink-0 text-amber-500"
+            fill="currentColor"
+            strokeWidth={0}
+            aria-hidden
+          />
           <div className="text-left">
             <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
               {t('checkout.earned_points', { count: earnedPts })}
@@ -961,7 +983,7 @@ function SuccessScreen({ orderNum, earnedPts }: { orderNum: string; earnedPts: n
           className="w-full bg-surface border border-border rounded-2xl p-4 space-y-3"
         >
           <div className="flex items-start gap-3 text-left">
-            <span className="text-2xl">🔔</span>
+            <BellRing className="size-6 shrink-0 text-green-deep" aria-hidden />
             <div>
               <p className="text-sm font-semibold text-ink">{t('checkout.push_title')}</p>
               <p className="text-xs text-muted mt-0.5">{t('checkout.push_hint')}</p>

@@ -1,3 +1,5 @@
+import { X } from 'lucide-react'
+import { LogoMark } from '@/shared/ui/Logo'
 import { useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
@@ -9,7 +11,7 @@ import { formatPrice } from '@/shared/lib/format'
 
 const TG_LINK = 'https://t.me/yakubov_111'
 
-// ─── Floating trigger button ──────────────────────────────────────────────────
+// Floating trigger button
 
 function BotTrigger({ onClick }: { onClick: () => void }) {
   const { t } = useTranslation()
@@ -30,13 +32,12 @@ function BotTrigger({ onClick }: { onClick: () => void }) {
         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-50" />
         <span className="relative inline-flex rounded-full h-3 w-3 bg-white" />
       </span>
-      <span className="hidden sm:inline">🌸</span>
       <span>{t('bot.cta')}</span>
     </motion.button>
   )
 }
 
-// ─── Bot message bubble ───────────────────────────────────────────────────────
+// Bot message bubble
 
 function BotBubble({ text }: { text: string }) {
   return (
@@ -46,7 +47,7 @@ function BotBubble({ text }: { text: string }) {
       transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
       className="flex items-start gap-2 max-w-[85%]"
     >
-      <span className="text-lg mt-0.5 shrink-0">🌸</span>
+      <LogoMark className="size-6 mt-0.5" />
       <div className="bg-green-deep/10 dark:bg-green-deep/20 text-ink rounded-2xl rounded-tl-sm px-4 py-2.5 text-sm leading-relaxed border border-green-deep/15">
         {text}
       </div>
@@ -54,10 +55,10 @@ function BotBubble({ text }: { text: string }) {
   )
 }
 
-// ─── Option chips ─────────────────────────────────────────────────────────────
+// Option chips
 
 interface OptionChipsProps {
-  options: { id: string; labelKey: string; emoji: string }[]
+  options: { id: string; labelKey: string }[]
   onSelect: (id: string) => void
 }
 
@@ -82,7 +83,6 @@ function OptionChips({ options, onSelect }: OptionChipsProps) {
                      hover:border-green-deep hover:bg-green-deep/10 hover:text-green-deep
                      transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-deep"
         >
-          <span>{opt.emoji}</span>
           <span>{t(opt.labelKey)}</span>
         </motion.button>
       ))}
@@ -90,7 +90,7 @@ function OptionChips({ options, onSelect }: OptionChipsProps) {
   )
 }
 
-// ─── Mini product card ────────────────────────────────────────────────────────
+// Mini product card
 
 function MiniProductCard({ product }: { product: import('@/entities/product/types').Product }) {
   const { t } = useTranslation()
@@ -121,7 +121,7 @@ function MiniProductCard({ product }: { product: import('@/entities/product/type
           <p className="text-sm font-semibold text-ink leading-tight line-clamp-2">
             {product.name}
           </p>
-          <p className="text-xs text-ink-muted mt-0.5 line-clamp-1">{product.composition}</p>
+          <p className="text-xs text-muted mt-0.5 line-clamp-1">{product.composition}</p>
         </div>
         <div className="flex items-center justify-between gap-2 mt-2">
           <span className="text-sm font-bold text-green-deep">
@@ -139,7 +139,7 @@ function MiniProductCard({ product }: { product: import('@/entities/product/type
   )
 }
 
-// ─── Results screen ───────────────────────────────────────────────────────────
+// Results screen
 
 function ResultsScreen({ onReset }: { onReset: () => void }) {
   const { t } = useTranslation()
@@ -193,7 +193,7 @@ function ResultsScreen({ onReset }: { onReset: () => void }) {
 
       <button
         onClick={onReset}
-        className="text-xs text-ink-muted hover:text-ink transition-colors text-center mt-1"
+        className="text-xs text-muted hover:text-ink transition-colors text-center mt-1"
       >
         {t('bot.restart')}
       </button>
@@ -201,7 +201,7 @@ function ResultsScreen({ onReset }: { onReset: () => void }) {
   )
 }
 
-// ─── Main chat window ─────────────────────────────────────────────────────────
+// Main chat window
 
 function BotWindow({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation()
@@ -223,7 +223,7 @@ function BotWindow({ onClose }: { onClose: () => void }) {
       if (opt) {
         history.push({
           role: 'user',
-          text: `${opt.emoji} ${t(opt.labelKey)}`,
+          text: t(opt.labelKey),
         })
       }
     } else {
@@ -268,12 +268,12 @@ function BotWindow({ onClose }: { onClose: () => void }) {
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-green-deep/15 flex items-center justify-center text-lg">
-            🌸
+          <div className="w-9 h-9 rounded-full bg-green-deep/15 flex items-center justify-center">
+            <LogoMark className="size-6" />
           </div>
           <div>
             <p className="text-sm font-semibold text-ink">{t('bot.name')}</p>
-            <span className="flex items-center gap-1.5 text-xs text-ink-muted">
+            <span className="flex items-center gap-1.5 text-xs text-muted">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
               {t('bot.online')}
             </span>
@@ -282,9 +282,9 @@ function BotWindow({ onClose }: { onClose: () => void }) {
         <button
           onClick={onClose}
           aria-label={t('common.close')}
-          className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-ink-muted hover:text-ink"
+          className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-muted hover:text-ink"
         >
-          ✕
+          <X className="size-4" aria-hidden />
         </button>
       </div>
 
@@ -331,7 +331,7 @@ function BotWindow({ onClose }: { onClose: () => void }) {
           href={TG_LINK}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 text-xs text-ink-muted hover:text-green-deep transition-colors"
+          className="flex items-center justify-center gap-2 text-xs text-muted hover:text-green-deep transition-colors"
         >
           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8l-1.68 7.92c-.12.56-.44.7-.88.44l-2.44-1.8-1.18 1.14c-.13.13-.24.24-.5.24l.18-2.52 4.6-4.16c.2-.18-.04-.28-.31-.1L7.46 14.9l-2.4-.75c-.52-.16-.53-.52.11-.77l9.4-3.62c.43-.16.82.1.67.77l-.6-.03z" />
@@ -343,7 +343,7 @@ function BotWindow({ onClose }: { onClose: () => void }) {
   )
 }
 
-// ─── Root component ───────────────────────────────────────────────────────────
+// Root component
 
 export function FlowerBot() {
   const { isOpen, open, close } = useFlowerBotStore()

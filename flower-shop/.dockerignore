@@ -1,6 +1,9 @@
 node_modules/
 dist/
+.vite/
 .git/
+.husky/
+.claude/
 .env
 .env.*
 !.env.example

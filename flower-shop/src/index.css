@@ -2,7 +2,7 @@
 @import 'tailwindcss';
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ── Dynamic CSS custom properties — values change in dark mode ── */
+/* Dynamic CSS custom properties — values change in dark mode */
 :root {
   color-scheme: light;
   --cream: #faf7f2;
@@ -33,7 +33,7 @@
   --gold: #ffd60a;
 }
 
-/* ── Tailwind v4: inline = CSS vars are referenced, not inlined ── */
+/* Tailwind v4: inline = CSS vars are referenced, not inlined */
 @theme inline {
   --color-cream: var(--cream);
   --color-surface: var(--surface);
@@ -53,7 +53,7 @@
   --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* ── Promo banner — warm green gradient with a soft gold glow ── */
+/* Promo banner — warm green gradient with a soft gold glow */
 .promo-gradient {
   background:
     radial-gradient(
@@ -93,7 +93,7 @@ body {
   font-family: 'Playfair Display', Georgia, serif;
 }
 
-/* ── Skeleton loader ── */
+/* Skeleton loader */
 @keyframes shimmer {
   0% {
     background-position: -200% 0;
@@ -109,7 +109,7 @@ body {
   border-radius: 8px;
 }
 
-/* ── Shake error animation ── */
+/* Shake error animation */
 @keyframes shake {
   0%,
   100% {
@@ -183,7 +183,7 @@ body {
   animation: draw-check-lg 0.35s 0.4s ease forwards;
 }
 
-/* ── Float — gentle up/down for empty state hero emojis ── */
+/* Float — gentle up/down for empty state hero emojis */
 @keyframes float {
   0%,
   100% {
@@ -197,7 +197,7 @@ body {
   animation: float 2.8s ease-in-out infinite;
 }
 
-/* ── fadeSlideIn — used by Input error messages ── */
+/* fadeSlideIn — used by Input error messages */
 @keyframes fadeSlideIn {
   from {
     opacity: 0;
@@ -212,12 +212,7 @@ body {
   animation: fadeSlideIn 0.18s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-/* ── prefers-reduced-motion ──────────────────────────────────────────────────
-   Strategy: keep functional feedback (fly, price flash, progress bar) as
-   instant-but-visible. Only cut purely decorative effects (kenburns, petals,
-   skeleton shimmer). Framer Motion's MotionConfig respects this via
-   useReducedMotion() in each component.
-*/
+/* Reduced motion: keep functional feedback, drop decorative effects. */
 @media (prefers-reduced-motion: reduce) {
   /* Kill decorative-only animations */
   .kenburns {

@@ -12,7 +12,7 @@ export const apiClient = axios.create({
   timeout: 15_000,
 })
 
-// ── Token storage ──────────────────────────────────────────────────────────────
+// Token storage
 // Access token lives in sessionStorage (cleared on tab close, ≤ 15 min TTL anyway)
 // Refresh token lives in localStorage (persists 30 days)
 
@@ -41,14 +41,14 @@ export function getRefreshToken(): string | null {
   return localStorage.getItem(KEYS.refresh)
 }
 
-// ── Request interceptor: attach JWT ────────────────────────────────────────────
+// Request interceptor: attach JWT
 apiClient.interceptors.request.use((config) => {
   const token = getAccessToken()
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
-// ── Response interceptor: auto-refresh on 401 ──────────────────────────────────
+// Response interceptor: auto-refresh on 401
 let refreshPromise: Promise<string> | null = null
 
 apiClient.interceptors.response.use(
@@ -91,7 +91,7 @@ async function performRefresh(): Promise<string> {
   return accessToken
 }
 
-// ── Typed error helper ─────────────────────────────────────────────────────────
+// Typed error helper
 export interface ApiError {
   code: string
   message: string

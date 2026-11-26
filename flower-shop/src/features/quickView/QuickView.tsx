@@ -1,3 +1,4 @@
+import { X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -208,7 +209,7 @@ export function QuickView() {
             className="absolute top-3 right-3 w-8 h-8 rounded-full bg-surface/80 backdrop-blur-sm flex items-center justify-center text-muted hover:text-ink transition-colors shadow"
             aria-label={t('common.close')}
           >
-            ✕
+            <X className="size-4" aria-hidden />
           </button>
         </motion.div>
       </motion.div>

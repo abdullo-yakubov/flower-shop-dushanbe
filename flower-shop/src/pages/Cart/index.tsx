@@ -1,3 +1,5 @@
+import { BadgePercent, ShoppingBag } from 'lucide-react'
+import { EmptyIcon } from '@/shared/ui/EmptyIcon'
 import { useState, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -63,13 +65,13 @@ export function CartPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
         >
-          <motion.p
-            className="text-7xl mb-5 select-none"
+          <motion.div
+            className="mb-5"
             animate={{ y: [0, -10, 0] }}
             transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
           >
-            🌸
-          </motion.p>
+            <EmptyIcon icon={ShoppingBag} className="size-20" />
+          </motion.div>
           <h1 className="font-serif text-2xl font-bold text-ink mb-2">{t('cart.empty')}</h1>
           <p className="text-sm text-muted max-w-xs">{t('cart.empty_hint')}</p>
         </motion.div>
@@ -207,7 +209,8 @@ export function CartPage() {
             {promoCode ? (
               <div className="flex items-center justify-between bg-green-deep/8 rounded-[10px] px-3 py-2.5">
                 <span className="text-sm font-medium text-green-deep">
-                  🎉 {promoCode} — −{promoDiscount}%
+                  <BadgePercent className="inline size-4 mr-1 -mt-0.5" aria-hidden />
+                  {promoCode} — −{promoDiscount}%
                 </span>
                 <button
                   onClick={clearPromo}

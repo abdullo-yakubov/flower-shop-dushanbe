@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
+import { Star } from 'lucide-react'
 import { cn } from '@/shared/lib/cn'
 
 interface StarRatingProps {
@@ -13,10 +14,10 @@ interface StarRatingProps {
 export function StarRating({ value, max = 5, onChange, size = 'sm' }: StarRatingProps) {
   const { t } = useTranslation()
   const [hover, setHover] = useState(0)
-  const sz = size === 'sm' ? 'text-sm' : 'text-xl'
+  const sz = size === 'sm' ? 'size-3.5' : 'size-6'
 
   return (
-    <span className={cn('inline-flex gap-0.5', sz)}>
+    <span className="inline-flex gap-0.5">
       {Array.from({ length: max }, (_, i) => i + 1).map((star) => {
         const active = (hover || value) >= star
         return (
@@ -36,9 +37,9 @@ export function StarRating({ value, max = 5, onChange, size = 'sm' }: StarRating
             <motion.span
               animate={{ color: active ? 'var(--gold)' : 'var(--border)' }}
               transition={{ duration: 0.12 }}
-              style={{ display: 'inline-block' }}
+              style={{ display: 'inline-flex' }}
             >
-              ★
+              <Star className={sz} fill="currentColor" strokeWidth={0} aria-hidden />
             </motion.span>
           </motion.button>
         )

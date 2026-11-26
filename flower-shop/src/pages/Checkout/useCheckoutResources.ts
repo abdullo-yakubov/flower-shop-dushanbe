@@ -1,3 +1,18 @@
+import {
+  Cake,
+  CakeSlice,
+  Candy,
+  Cherry,
+  Feather,
+  Flower,
+  Flower2,
+  Gift,
+  Heart,
+  Leaf,
+  PawPrint,
+  Sparkles,
+  type LucideIcon,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { API_ENABLED } from '@/shared/lib/api/client'
 import { apiGetAddons, apiGetPostcards, apiGetMessageTemplates } from '@/shared/lib/api/misc'
@@ -5,7 +20,7 @@ import { apiGetAddons, apiGetPostcards, apiGetMessageTemplates } from '@/shared/
 export interface CheckoutAddon {
   id: string
   name: string
-  emoji: string
+  icon: LucideIcon
   price: number
   hasInscription: boolean
 }
@@ -13,7 +28,7 @@ export interface CheckoutAddon {
 export interface CheckoutPostcard {
   id: string
   occasion: string
-  emoji: string
+  icon: LucideIcon
   label: string
   isPopular: boolean
 }
@@ -25,70 +40,76 @@ export interface CheckoutTemplate {
   isPopular: boolean
 }
 
-// ── Emoji map for API addon types ─────────────────────────────────────────────
-const ADDON_EMOJI: Record<string, string> = {
-  chocolate: '🍫',
-  teddy: '🧸',
-  choco_strawberry: '🍓',
-  bento_cake: '🎂',
+const ADDON_ICONS: Record<string, LucideIcon> = {
+  chocolate: Candy,
+  teddy: PawPrint,
+  choco_strawberry: Cherry,
+  bento_cake: CakeSlice,
 }
 
-// ── Static fallback data (used when API is not available) ─────────────────────
+const POSTCARD_ICONS: Record<string, LucideIcon> = {
+  birthday: Cake,
+  romantic: Heart,
+  universal: Sparkles,
+  funeral: Feather,
+}
+
+// Used when the API is not configured
 
 const STATIC_ADDONS: CheckoutAddon[] = [
-  { id: 'choco', name: 'checkout.addon_choco', emoji: '🍫', price: 90, hasInscription: false },
-  { id: 'teddy', name: 'checkout.addon_teddy', emoji: '🧸', price: 150, hasInscription: false },
+  { id: 'choco', name: 'checkout.addon_choco', icon: Candy, price: 90, hasInscription: false },
+  { id: 'teddy', name: 'checkout.addon_teddy', icon: PawPrint, price: 150, hasInscription: false },
   {
     id: 'choco_str',
     name: 'checkout.addon_choco_str',
-    emoji: '🍓',
+    icon: Cherry,
     price: 220,
     hasInscription: false,
   },
-  { id: 'bento', name: 'checkout.addon_bento', emoji: '🎂', price: 250, hasInscription: true },
+  { id: 'bento', name: 'checkout.addon_bento', icon: CakeSlice, price: 250, hasInscription: true },
 ]
 
 const STATIC_POSTCARDS: CheckoutPostcard[] = [
   {
     id: 'bd1',
     occasion: 'birthday',
-    emoji: '🎂',
+    icon: Cake,
     label: 'checkout.design_classic',
     isPopular: true,
   },
   {
     id: 'bd2',
     occasion: 'birthday',
-    emoji: '🌸',
+    icon: Flower2,
     label: 'checkout.design_floral',
     isPopular: false,
   },
-  { id: 'rom1', occasion: 'romantic', emoji: '❤', label: 'checkout.design_love', isPopular: true },
+  { id: 'rom1', occasion: 'romantic', icon: Heart, label: 'checkout.design_love', isPopular: true },
   {
     id: 'rom2',
     occasion: 'romantic',
-    emoji: '🌹',
+    icon: Flower,
     label: 'checkout.design_roses',
     isPopular: false,
   },
   {
     id: 'uni1',
     occasion: 'universal',
-    emoji: '✨',
+    icon: Sparkles,
     label: 'checkout.design_universal',
     isPopular: true,
   },
   {
     id: 'uni2',
     occasion: 'universal',
-    emoji: '🌿',
+    icon: Leaf,
     label: 'checkout.design_minimal',
     isPopular: false,
   },
   {
     id: 'fun1',
     occasion: 'funeral',
-    emoji: '🕊',
+    icon: Feather,
     label: 'checkout.design_funeral',
     isPopular: false,
   },
@@ -127,7 +148,7 @@ export function useCheckoutResources(): CheckoutResources {
           apiAddons.map((a) => ({
             id: a.id,
             name: a.name,
-            emoji: ADDON_EMOJI[a.type] ?? '🎁',
+            icon: ADDON_ICONS[a.type] ?? Gift,
             price: a.price,
             hasInscription: a.hasInscription ?? false,
           }))
@@ -136,8 +157,8 @@ export function useCheckoutResources(): CheckoutResources {
           apiPostcards.map((p) => ({
             id: p.id,
             occasion: p.occasion,
-            emoji: typeof p.image === 'string' && p.image.length <= 4 ? p.image : '🌸',
-            label: '', // text not needed for emoji-only display
+            icon: POSTCARD_ICONS[p.occasion] ?? Flower2,
+            label: '',
             isPopular: p.isPopular ?? false,
           }))
         )

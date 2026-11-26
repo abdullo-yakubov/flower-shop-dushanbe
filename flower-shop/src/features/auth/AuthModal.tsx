@@ -40,7 +40,7 @@ export function AuthModal() {
     return () => document.removeEventListener('keydown', onKey)
   }, [isModalOpen, closeModal])
 
-  // ── Send OTP ──────────────────────────────────────────────────────────────
+  // Send OTP
 
   const handlePhone = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -66,7 +66,7 @@ export function AuthModal() {
     }
   }
 
-  // ── OTP input handlers ────────────────────────────────────────────────────
+  // OTP input handlers
 
   const handleCodeInput = (i: number, val: string) => {
     const digit = val.replace(/\D/g, '').slice(-1)
@@ -84,7 +84,7 @@ export function AuthModal() {
     }
   }
 
-  // ── Verify OTP ────────────────────────────────────────────────────────────
+  // Verify OTP
 
   const submitCode = async (fullCode: string) => {
     setLoading(true)

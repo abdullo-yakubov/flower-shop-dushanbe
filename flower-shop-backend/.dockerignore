@@ -2,8 +2,11 @@
 **/obj/
 **/.vs/
 **/.vscode/
+**/.claude/
 **/logs/
 **/uploads/
+**/appsettings.Development.json
 **/.env
 **/.env.*
 !**/.env.example
+tests/

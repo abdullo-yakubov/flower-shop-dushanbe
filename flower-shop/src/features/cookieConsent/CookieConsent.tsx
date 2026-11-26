@@ -1,3 +1,4 @@
+import { Cookie } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -118,7 +119,10 @@ export function CookieConsent() {
         className="fixed bottom-16 md:bottom-4 inset-x-0 z-40 flex justify-center px-4 pointer-events-none"
       >
         <div className="bg-surface rounded-2xl shadow-2xl border border-border p-5 w-full max-w-lg pointer-events-auto">
-          <p className="text-sm font-semibold text-ink mb-1">🍪 {t('cookies.banner_title')}</p>
+          <p className="flex items-center gap-2 text-sm font-semibold text-ink mb-1">
+            <Cookie className="size-4 text-green-deep" aria-hidden />
+            {t('cookies.banner_title')}
+          </p>
           <p className="text-xs text-muted mb-4">
             {t('cookies.banner_text')}{' '}
             <Link to={ROUTES.COOKIES} className="text-green-deep underline">

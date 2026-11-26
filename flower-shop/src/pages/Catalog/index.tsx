@@ -1,3 +1,6 @@
+import { CalendarHeart, Gift, SearchX } from 'lucide-react'
+import { EmptyIcon } from '@/shared/ui/EmptyIcon'
+import { OCCASION_ICONS } from '@/shared/ui/occasionIcons'
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -19,7 +22,7 @@ import { usePageTitle } from '@/shared/hooks/usePageTitle'
 import { useIsMobile } from '@/shared/hooks/useMediaQuery'
 import { getHolidayInfo } from '@/shared/lib/holiday'
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// Constants
 
 const SORT_OPTIONS = [
   { value: 'popular', tKey: 'catalog.sort_popular' },
@@ -40,20 +43,20 @@ const OCCASION_IDS = [
   'other',
 ] as const
 
-const OCCASION_EMOJI: Record<(typeof OCCASION_IDS)[number], string> = {
-  birthday: '🎂',
-  wedding: '💍',
-  nikah: '🕌',
-  romantic: '❤️',
-  mom: '🌷',
-  sorry: '🙏',
-  funeral: '🕊',
-  other: '🌸',
-}
-
 const PROMO_CODE = 'WELCOME20'
 
-// ─── Filter panel ─────────────────────────────────────────────────────────────
+function OccasionLabel({ id }: { id: string }) {
+  const { t } = useTranslation()
+  const Icon = OCCASION_ICONS[id] ?? OCCASION_ICONS.other
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <Icon className="size-3.5 shrink-0" aria-hidden />
+      {t(`occasions.${id}`)}
+    </span>
+  )
+}
+
+// Filter panel
 
 function FilterPanel({
   filters,
@@ -177,7 +180,7 @@ function FilterPanel({
                   : 'border-border text-muted hover:border-green-deep bg-surface'
               }`}
             >
-              {OCCASION_EMOJI[id]} {t(`occasions.${id}`)}
+              <OccasionLabel id={id} />
             </button>
           ))}
         </div>
@@ -256,7 +259,7 @@ function FunnelIcon() {
   )
 }
 
-// ─── Catalog page ─────────────────────────────────────────────────────────────
+// Catalog page
 
 export function CatalogPage() {
   const { t } = useTranslation()
@@ -335,7 +338,7 @@ export function CatalogPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
-      {/* ── Occasion chips ── */}
+      {/* Occasion chips */}
       <div className="mb-5">
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
           {OCCASION_IDS.map((id) => (
@@ -354,14 +357,13 @@ export function CatalogPage() {
                   : 'border-border bg-surface text-ink hover:border-green-deep/50'
               }`}
             >
-              <span>{OCCASION_EMOJI[id]}</span>
-              {t(`occasions.${id}`)}
+              <OccasionLabel id={id} />
             </motion.button>
           ))}
         </div>
       </div>
 
-      {/* ── Holiday banner ── */}
+      {/* Holiday banner */}
       <AnimatePresence>
         {holiday.active && (
           <motion.div
@@ -370,7 +372,7 @@ export function CatalogPage() {
             exit={{ opacity: 0 }}
             className="mb-4 flex items-center gap-3 px-4 py-3 rounded-xl bg-rose-dust/20 border border-rose-dust"
           >
-            <span className="text-xl">🌸</span>
+            <CalendarHeart className="size-5 shrink-0 text-rose-dust" aria-hidden />
             <div>
               <p className="text-sm font-semibold text-ink">{holiday.name}</p>
               <p className="text-xs text-muted">{t('catalog.holiday_hint')}</p>
@@ -379,14 +381,14 @@ export function CatalogPage() {
         )}
       </AnimatePresence>
 
-      {/* ── Promo banner ── */}
+      {/* Promo banner */}
       <AnimatePresence>
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-6 flex items-center gap-3 px-4 py-3 rounded-xl bg-green-deep/10 border border-green-deep/20"
         >
-          <span className="text-xl">🎁</span>
+          <Gift className="size-5 shrink-0 text-green-deep" aria-hidden />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-ink">{t('catalog.promo_label')}</p>
             <p className="text-xs text-muted">{t('catalog.promo_hint')}</p>
@@ -419,9 +421,7 @@ export function CatalogPage() {
               ) : (
                 <>
                   <h1 className="font-serif text-2xl font-semibold text-ink">
-                    {filters.occasion
-                      ? `${OCCASION_EMOJI[filters.occasion as (typeof OCCASION_IDS)[number]]} ${t(`occasions.${filters.occasion}`)}`
-                      : t('catalog.title')}
+                    {filters.occasion ? t(`occasions.`) : t('catalog.title')}
                   </h1>
                   {!isLoading && (
                     <p className="text-sm text-muted mt-0.5">
@@ -469,8 +469,7 @@ export function CatalogPage() {
               >
                 {filters.occasion && (
                   <ActiveChip onRemove={() => setFilters({ ...filters, occasion: undefined })}>
-                    {OCCASION_EMOJI[filters.occasion as (typeof OCCASION_IDS)[number]]}{' '}
-                    {t(`occasions.${filters.occasion}`)}
+                    <OccasionLabel id={filters.occasion} />
                   </ActiveChip>
                 )}
                 {(filters.priceMin || filters.priceMax) && (
@@ -538,7 +537,7 @@ export function CatalogPage() {
           {/* Empty */}
           {!isLoading && products.length === 0 && (
             <div className="text-center py-20">
-              <div className="text-6xl mb-4">🥀</div>
+              <EmptyIcon icon={SearchX} tone="muted" className="mb-4" />
               <p className="font-serif text-xl text-ink mb-2">{t('catalog.no_results')}</p>
               <p className="text-sm text-muted">{t('catalog.no_results_hint')}</p>
               <Button variant="outline" className="mt-4" onClick={() => setSearchParams({})}>

@@ -2,14 +2,12 @@ import type { Product } from '@/entities/product/types'
 import type { BotAnswers } from './store'
 import { MOCK_PRODUCTS } from '@/entities/product/mock'
 
-// ─── Chatbot script ───────────────────────────────────────────────────────────
+// Chatbot script
 // All question keys map to i18n `bot.*` keys
-// ─────────────────────────────────────────────────────────────────────────────
 
 export interface BotOption {
   id: string
   labelKey: string // i18n key, e.g. 'bot.opt_mom'
-  emoji: string
 }
 
 export interface BotQuestion {
@@ -25,12 +23,12 @@ export const BOT_QUESTIONS: BotQuestion[] = [
     messageKey: 'bot.q_for_whom',
     field: 'forWhom',
     options: [
-      { id: 'mom', labelKey: 'bot.opt_mom', emoji: '💐' },
-      { id: 'love', labelKey: 'bot.opt_love', emoji: '❤️' },
-      { id: 'colleague', labelKey: 'bot.opt_colleague', emoji: '🤝' },
-      { id: 'friend', labelKey: 'bot.opt_friend', emoji: '🙌' },
-      { id: 'wedding', labelKey: 'bot.opt_wedding', emoji: '💍' },
-      { id: 'myself', labelKey: 'bot.opt_myself', emoji: '✨' },
+      { id: 'mom', labelKey: 'bot.opt_mom' },
+      { id: 'love', labelKey: 'bot.opt_love' },
+      { id: 'colleague', labelKey: 'bot.opt_colleague' },
+      { id: 'friend', labelKey: 'bot.opt_friend' },
+      { id: 'wedding', labelKey: 'bot.opt_wedding' },
+      { id: 'myself', labelKey: 'bot.opt_myself' },
     ],
   },
   {
@@ -38,12 +36,12 @@ export const BOT_QUESTIONS: BotQuestion[] = [
     messageKey: 'bot.q_occasion',
     field: 'occasion',
     options: [
-      { id: 'birthday', labelKey: 'bot.opt_birthday', emoji: '🎂' },
-      { id: 'just', labelKey: 'bot.opt_just', emoji: '🌸' },
-      { id: 'romance', labelKey: 'bot.opt_romance', emoji: '💫' },
-      { id: 'thanks', labelKey: 'bot.opt_thanks', emoji: '🙏' },
-      { id: 'sorry', labelKey: 'bot.opt_sorry', emoji: '🕊️' },
-      { id: 'funeral', labelKey: 'bot.opt_funeral', emoji: '🕯️' },
+      { id: 'birthday', labelKey: 'bot.opt_birthday' },
+      { id: 'just', labelKey: 'bot.opt_just' },
+      { id: 'romance', labelKey: 'bot.opt_romance' },
+      { id: 'thanks', labelKey: 'bot.opt_thanks' },
+      { id: 'sorry', labelKey: 'bot.opt_sorry' },
+      { id: 'funeral', labelKey: 'bot.opt_funeral' },
     ],
   },
   {
@@ -51,10 +49,10 @@ export const BOT_QUESTIONS: BotQuestion[] = [
     messageKey: 'bot.q_budget',
     field: 'budget',
     options: [
-      { id: 'low', labelKey: 'bot.opt_budget_low', emoji: '💰' },
-      { id: 'mid', labelKey: 'bot.opt_budget_mid', emoji: '💳' },
-      { id: 'high', labelKey: 'bot.opt_budget_high', emoji: '💎' },
-      { id: 'any', labelKey: 'bot.opt_budget_any', emoji: '🎁' },
+      { id: 'low', labelKey: 'bot.opt_budget_low' },
+      { id: 'mid', labelKey: 'bot.opt_budget_mid' },
+      { id: 'high', labelKey: 'bot.opt_budget_high' },
+      { id: 'any', labelKey: 'bot.opt_budget_any' },
     ],
   },
   {
@@ -62,13 +60,13 @@ export const BOT_QUESTIONS: BotQuestion[] = [
     messageKey: 'bot.q_urgency',
     field: 'urgency',
     options: [
-      { id: 'today', labelKey: 'bot.opt_today', emoji: '⚡' },
-      { id: 'later', labelKey: 'bot.opt_later', emoji: '📅' },
+      { id: 'today', labelKey: 'bot.opt_today' },
+      { id: 'later', labelKey: 'bot.opt_later' },
     ],
   },
 ]
 
-// ─── Filter logic ─────────────────────────────────────────────────────────────
+// Filter logic
 
 const OCCASION_MAP: Record<string, string[]> = {
   birthday: ['birthday'],

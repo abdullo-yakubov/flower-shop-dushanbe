@@ -10,7 +10,7 @@ export async function fetchProducts(
     return apiFetchProducts(filters)
   }
 
-  // ── Mock fallback ──────────────────────────────────────────────────────────
+  // Mock fallback
   await new Promise((r) => setTimeout(r, 400))
   let items = [...MOCK_PRODUCTS]
 
