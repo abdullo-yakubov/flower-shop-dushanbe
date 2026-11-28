@@ -16,3 +16,4 @@
 .agents/
 **/*.tsbuildinfo
 **/modal_after.png
+.playwright-mcp/
